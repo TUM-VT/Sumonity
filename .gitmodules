@@ -1,0 +1,3 @@
+[submodule "SumoTraCI/sumoProject"]
+	path = SumoTraCI/sumoProject
+	url = git@github.com:TUM-VT/SumonitySumoExample.git

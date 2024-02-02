@@ -39,6 +39,8 @@ Sumonity is a cutting-edge interface that integrates the Simulation of Urban MOb
 git submodule update --init --recursive
 ```
 
+This submodule should point to your specific sumo project that you want to run in parallel to your unity simulation. In our framework we are using mathworks roadrunner to export the unity 3d environment alongside an opendrive map. We then convert the opendrive map to a sumo network file, which we are using in this system. The provided sumo repository shows the basic setup of the files.
+
 2. Go into the sub repository for Sumo and install the virtual environment as follows:
 
 ```
