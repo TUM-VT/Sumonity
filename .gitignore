@@ -1,0 +1,9 @@
+*.xodr
+*.xml
+*.geojson
+*.sumocfg
+*.neteditcfg
+__pycache__
+*.rou.xml
+venv/
+*.meta

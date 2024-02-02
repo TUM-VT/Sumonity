@@ -1,0 +1,5 @@
+PythonTurtle==0.3.2
+sumolib==1.18.0
+tk==0.1.0
+traci==1.18.0
+numpy==1.24.4
