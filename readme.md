@@ -10,9 +10,6 @@
 7. [Agent Information](#agent-information)
 8. [Vehicle Control Mechanism](#vehicle-control-mechanism)
 9. [Dependencies](#dependencies)
-10. [Configuration](#configuration)
-11. [Documentation](#documentation)
-12. [Examples](#examples)
 13. [Troubleshooting](#troubleshooting)
 14. [Contributors](#contributors)
 15. [License](#license)
@@ -85,15 +82,6 @@ Sumonity supports multiple SUMO vehicle types, each characterized by properties 
 
 ## Dependencies
 Setup is tested on Ubuntu 20.04.
-
-## Configuration
-(TODO: Provide details on how to configure Sumonity for different simulation environments.)
-
-## Documentation
-(TODO: Include a link or directions to the full documentation of Sumonity.)
-
-## Examples
-(TODO: Provide example simulations or use cases to demonstrate how Sumonity can be utilized.)
 
 ## Troubleshooting
 - setup the correct file in the socketServer.py
