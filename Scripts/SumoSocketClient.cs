@@ -13,36 +13,84 @@ namespace tumvt.sumounity
 
     public class SumoSocketClient : MonoBehaviour
     {
+
+        [System.Serializable]
+        private class DebugData 
+        {
+            [Tooltip("Message received from/to SUMO")]
+            public string messageReceived;
+            public string messageToSend;
+        }
         [Header("Socket Communication")]
-        public string messageReceived;
+        [SerializeField] private DebugData debugData;
+
+
+        [System.Serializable]
+        private class SimulatorVehicleInfo
+        {
+            [Tooltip("The ID of the ego vehicle in SUMO used for inserting vehicles into the SUMO simulation")]
+            public string egoVehicleId = "bike1";
+            [Tooltip("The Transform of the ego vehicle in Unity used for inserting vehicles into the SUMO simulation")]
+            public Transform egoVehicle;
+            [Tooltip("Send data to SUMO")]
+            public bool _sendData;
+        }
+        [Header("Simulator Vehicle Configuration")]
+        [SerializeField] private SimulatorVehicleInfo simulatorVehicleInfo;
+        public bool SendData => simulatorVehicleInfo._sendData;
+        public Transform EgoVehicle => simulatorVehicleInfo.egoVehicle;
+
+
+
+        [System.Serializable]
+        private class OptimizationSettings
+        {
+            [Tooltip("If enabled SUMO-Simulation runs in background and no vehicles are spawned")]
+            public bool runInBackground = false;
+            public bool useEgoRadius = false;
+            [Range(0, 500)] 
+            public float egoRadius = 100;
+        }
         
-        public bool sendData;
-        public string messageToSend;
-        
-        private string egoVehicleId = "bike1";
-        public Transform EgoVehicle;
-        
+        [System.Serializable]
+        private class VehicleToggles
+        {
+            public bool busEnable = false;
+            public bool pedestrianEnable = false;
+        }
 
-        [Header("Serialization")]
-        public SumoSimulationStepInfo stepInfo;
+        [Header("Settings")]
+        [Space(10)]
+        [SerializeField] private OptimizationSettings optimizationSettings;
+        [SerializeField] private VehicleToggles vehicleToggles;
 
-        
+        [Header("Simulation Step Information")]
+        [SerializeField] private SumoSimulationStepInfo _stepInfo;
+        public SumoSimulationStepInfo StepInfo => _stepInfo;
 
-        public SocketClient socketClient;
+        [System.Serializable]
+        private class VehicleSetup
+        {
+            public VehicleCompositionsScriptableObject vehicleCompositions;
+            public Dictionary<string, GameObject> vehDict = new Dictionary<string, GameObject>();
+        }
+
+        [Header("SUMO Vehicles")]
+        [SerializeField] private VehicleSetup vehicleSetup;
 
 
-        [Header("Vehicles Simulation")]
-        public VehicleCompositionsScriptableObject vehicleCompositions; 
-        public Dictionary<string, GameObject> vehDict = new Dictionary<string, GameObject>();
+        // Properties for external access
+        public bool RunInBackground => optimizationSettings.runInBackground;
 
-        [Header("Optimization")]
-        [Tooltip("If enabled SUMO-Simulation runs in background and no vehicles are spawned")]
-        public bool runInBackground = false;
-        private bool busEnable = false;
-        private bool pedestrianEnable = false;
-        public bool useEgoRadius = false;
-        public float egoRadius = 100;
-        
+        private SocketClient socketClient;
+
+
+
+
+
+        // ======================
+        //      Start
+        // ======================
 
         void Start()
         {
@@ -51,89 +99,75 @@ namespace tumvt.sumounity
             socketClient.Start();
         }
 
-
-
         void Update()
         {
             // ======================
             //      Receive Data
             // ====================== 
-            messageReceived = socketClient.messageReceived;
+            debugData.messageReceived = socketClient.messageReceived;
 
-            if (messageReceived!=null){
-
+            if (debugData.messageReceived != null)
+            {
                 try
                 {
-                    stepInfo = JsonConvert.DeserializeObject<SumoSimulationStepInfo>(messageReceived);
+                    _stepInfo = JsonConvert.DeserializeObject<SumoSimulationStepInfo>(debugData.messageReceived);
                 }
                 catch (JsonException ex)
                 {
                     Debug.LogWarning($"Json Deserialization of SumoStep failed! Exception: {ex.Message}");
-                    stepInfo = new SumoSimulationStepInfo();
+                    _stepInfo = new SumoSimulationStepInfo();
                 }
-
-
                 
                 UpdateVehiclesDictionary();
-                UpdateTrafficLight();
             }        
 
             // ======================
             //      Send Data
             // ======================
-            // This is not used now and may be removed in the future, depending on the sumo interface structure
 
-            if (sendData)
+            if (simulatorVehicleInfo._sendData)
             {
                 SerializableVehicle ego = new SerializableVehicle();
-                ego.id = "bike1";
+                ego.id = simulatorVehicleInfo.egoVehicleId;
 
-                Vector3 egoPos = EgoVehicle.position;
-                // Vector3 egoPos = EgoVehicle.position + new Vector3(200, 0, 100f);
-                float egoRot = EgoVehicle.rotation.eulerAngles.y;
+                Vector3 egoPos = simulatorVehicleInfo.egoVehicle.position;
+                float egoRot = simulatorVehicleInfo.egoVehicle.rotation.eulerAngles.y;
 
                 ego.positionX = egoPos.x;
                 ego.positionY = egoPos.z;
                 ego.rotation = egoRot;
 
-                messageToSend = JsonConvert.SerializeObject(ego);
-                socketClient.messageToSend = messageToSend;
+                debugData.messageToSend = JsonConvert.SerializeObject(ego);
+                socketClient.messageToSend = debugData.messageToSend;
             }
         }
-
 
         private void OnApplicationQuit()
         {
            socketClient.Close();
         }
 
-        void UpdateTrafficLight()
-        {
-            ;
-        }
-
         void UpdateVehiclesDictionary()
         {
+            float time = _stepInfo.time;
 
-            float time = stepInfo.time;
-
-            foreach (SerializableVehicle serVehicle in stepInfo.vehicleList)
+            foreach (SerializableVehicle serVehicle in _stepInfo.vehicleList)
             {   
                 //check for every vehicle if its a bus, a pedestrian or if backgorund mode is off
-                if(serVehicle.vehicleType == "bus" || !runInBackground || serVehicle.vehicleType == "pedestrian")
+                if(serVehicle.vehicleType == "bus" || !RunInBackground || serVehicle.vehicleType == "pedestrian")
                 {
                     string vehId = serVehicle.id;
 
-                    bool containsKey = vehDict.ContainsKey(vehId);
+                    bool containsKey = vehicleSetup.vehDict.ContainsKey(vehId);
 
                     bool isInRadius = true;
-                    if(useEgoRadius)
+                    if(optimizationSettings.useEgoRadius)
                     {
-                        isInRadius = Vector3.Distance(new Vector3(serVehicle.positionX, 0, serVehicle.positionY), EgoVehicle.position) <= egoRadius;
-
+                        isInRadius = Vector3.Distance(new Vector3(serVehicle.positionX, 0, serVehicle.positionY), 
+                            simulatorVehicleInfo.egoVehicle.position) <= optimizationSettings.egoRadius;
                     }
                     
-                    if (!containsKey && !(vehId == egoVehicleId) && isInRadius)
+                    if (!containsKey && !(vehId == simulatorVehicleInfo.egoVehicleId) && isInRadius)
                     { // If dictionary does not contain key spawn a vehicle. Do this only if it's not the ego vehicle and if the vehicle is in the defined radius (for the default case the radius can be seen as infite)
 
                         GameObject vehObj;
@@ -141,28 +175,28 @@ namespace tumvt.sumounity
 
                         if (serVehicle.vehicleType == "passenger")
                         {
-                            vehObj = vehicleCompositions.PassengerCars[Random.Range(0, vehicleCompositions.PassengerCars.Count)];
+                            vehObj = vehicleSetup.vehicleCompositions.PassengerCars[Random.Range(0, vehicleSetup.vehicleCompositions.PassengerCars.Count)];
                             specificHeightOfCoordianteFrame = 0f;
                         }
                         else if (serVehicle.vehicleType == "bicycle")
                         {
-                            vehObj = vehicleCompositions.Bicycles[Random.Range(0, vehicleCompositions.Bicycles.Count)];
+                            vehObj = vehicleSetup.vehicleCompositions.Bicycles[Random.Range(0, vehicleSetup.vehicleCompositions.Bicycles.Count)];
                             specificHeightOfCoordianteFrame = 0f;
                         }
-                        else if (serVehicle.vehicleType == "pedestrian" && !pedestrianEnable)
+                        else if (serVehicle.vehicleType == "pedestrian" && !vehicleToggles.pedestrianEnable)
                         {
-                            vehObj = vehicleCompositions.Persons[Random.Range(0, vehicleCompositions.Persons.Count)];
+                            vehObj = vehicleSetup.vehicleCompositions.Persons[Random.Range(0, vehicleSetup.vehicleCompositions.Persons.Count)];
                             specificHeightOfCoordianteFrame = 1.1f;
                         }
                         // check if bus is enabled
-                        else if (serVehicle.vehicleType == "bus" && !busEnable)
+                        else if (serVehicle.vehicleType == "bus" && !vehicleToggles.busEnable)
                         {
-                            vehObj = vehicleCompositions.Busses[Random.Range(0, vehicleCompositions.Busses.Count)];
+                            vehObj = vehicleSetup.vehicleCompositions.Busses[Random.Range(0, vehicleSetup.vehicleCompositions.Busses.Count)];
                             specificHeightOfCoordianteFrame = 1f;
                         }
                         else if (serVehicle.vehicleType == "taxi")
                         {
-                            vehObj = vehicleCompositions.Taxis[Random.Range(0, vehicleCompositions.Taxis.Count)];
+                            vehObj = vehicleSetup.vehicleCompositions.Taxis[Random.Range(0, vehicleSetup.vehicleCompositions.Taxis.Count)];
                             specificHeightOfCoordianteFrame = 1f;
                         }
                         else
@@ -170,7 +204,6 @@ namespace tumvt.sumounity
                             Debug.LogWarning("Vehicle Type not found in Vehicle Compositions Scriptable Object!");
                             continue;
                         }
-
 
                         Vector3 pos = new Vector3(serVehicle.positionX, specificHeightOfCoordianteFrame, serVehicle.positionY); // veh is starting at 1m height as there is the coordinate frame
                         Quaternion rot = Quaternion.Euler(0, serVehicle.rotation+(float)180, 0);
@@ -216,7 +249,7 @@ namespace tumvt.sumounity
                         }
                         controller.id = serVehicle.id;
 
-                        vehDict.Add(serVehicle.id, veh);
+                        vehicleSetup.vehDict.Add(serVehicle.id, veh);
 
                     }
                     
@@ -226,10 +259,10 @@ namespace tumvt.sumounity
             // check for non existent vehicles in sumo
             try
             {
-                foreach (KeyValuePair<string, GameObject> kvp in vehDict)
+                foreach (KeyValuePair<string, GameObject> kvp in vehicleSetup.vehDict)
                 {
                     bool idIsContained = false;
-                    foreach (SerializableVehicle serVehicle in stepInfo.vehicleList)
+                    foreach (SerializableVehicle serVehicle in _stepInfo.vehicleList)
                     {
                         if (kvp.Key == serVehicle.id)
                         {
@@ -237,24 +270,25 @@ namespace tumvt.sumounity
                             break;
                         }
                     }
-                    if (idIsContained && useEgoRadius)
+                    if (idIsContained && optimizationSettings.useEgoRadius)
                     {
                         // Check for position in BBOX
                         // if false
                         // destroy
-                        foreach (SerializableVehicle serVehicle in stepInfo.vehicleList)
+                        foreach (SerializableVehicle serVehicle in _stepInfo.vehicleList)
                         {
-                            if (Vector3.Distance(new Vector3(serVehicle.positionX, 0, serVehicle.positionY), EgoVehicle.position) <= egoRadius)
+                            if (Vector3.Distance(new Vector3(serVehicle.positionX, 0, serVehicle.positionY), 
+                                simulatorVehicleInfo.egoVehicle.position) <= optimizationSettings.egoRadius)
                             { // Check Distance to EgoVehicle
                                 Destroy(kvp.Value.gameObject);
-                                vehDict.Remove(kvp.Key);
+                                vehicleSetup.vehDict.Remove(kvp.Key);
                             }
                         }
                     }
                     if (!idIsContained)
                     {
                         Destroy(kvp.Value.gameObject);
-                        vehDict.Remove(kvp.Key);
+                        vehicleSetup.vehDict.Remove(kvp.Key);
                     }
                 }
             }
@@ -270,17 +304,17 @@ namespace tumvt.sumounity
                 // Debug.LogWarning("Cleanup code in the finally block.");
             }
             
-            if(runInBackground)
+            if(RunInBackground)
             {
 
                 // Destroy all vehicles
-                if(vehDict.Count>0)
+                if(vehicleSetup.vehDict.Count>0)
                 {
                     List<string> keysToRemove = new List<string>();
-                    //Debug.LogError(vehDict.Count);
-                    foreach (KeyValuePair<string, GameObject> kvp in vehDict)
+                    //Debug.LogError(vehicleSetup.vehDict.Count);
+                    foreach (KeyValuePair<string, GameObject> kvp in vehicleSetup.vehDict)
                     {  
-                        if(kvp.Value.gameObject.CompareTag("Bus") && !busEnable)
+                        if(kvp.Value.gameObject.CompareTag("Bus") && !vehicleToggles.busEnable)
                         {
                             Debug.LogWarning("Bus is not destroyed in background mode!");
                         }
@@ -288,7 +322,7 @@ namespace tumvt.sumounity
                         {
                             Debug.LogWarning("Ego is not destroyed in background mode!");
                         }
-                        else if(kvp.Value.gameObject.CompareTag("Person") && !pedestrianEnable)
+                        else if(kvp.Value.gameObject.CompareTag("Person") && !vehicleToggles.pedestrianEnable)
                         {
                             Debug.LogWarning("Person is not destroyed");
                         }
@@ -303,9 +337,9 @@ namespace tumvt.sumounity
 
                     foreach (string key in keysToRemove)
                     {
-                        vehDict.Remove(key);
+                        vehicleSetup.vehDict.Remove(key);
                     }
-                    //vehDict.Clear();
+                    //vehicleSetup.vehDict.Clear();
                 }
             }
             
@@ -313,26 +347,26 @@ namespace tumvt.sumounity
 
         public void SetRunInBackground(bool value)
         {
-            runInBackground = value;
+            optimizationSettings.runInBackground = value;
         }
 
         public void SetBusEnable(bool value)
         {
-            busEnable = value;
+            vehicleToggles.busEnable = value;
         }
 
         public void SetPedestrianEnable(bool value)
         {
-            pedestrianEnable = value;
+            vehicleToggles.pedestrianEnable = value;
         }
 
         private void OnDrawGizmos()
         {
-            if (useEgoRadius)
+            if (optimizationSettings.useEgoRadius && simulatorVehicleInfo.egoVehicle != null)
             {
                 Gizmos.color = new Color(1, 0, 0, 0.5f);
-                Gizmos.DrawSphere(EgoVehicle.position, 2);
-                Gizmos.DrawSphere(EgoVehicle.position, egoRadius);
+                Gizmos.DrawSphere(simulatorVehicleInfo.egoVehicle.position, 2);
+                Gizmos.DrawSphere(simulatorVehicleInfo.egoVehicle.position, optimizationSettings.egoRadius);
             }
         }
     }

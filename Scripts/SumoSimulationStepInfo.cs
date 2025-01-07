@@ -119,7 +119,7 @@ namespace tumvt.sumounity
             bool isInsidePhsyicsArea=false;	
             bool VehicleFound=false;
             SerializableVehicle currentVehicleState=null;
-            foreach(SerializableVehicle veh in sock.stepInfo.vehicleList)
+            foreach(SerializableVehicle veh in sock.StepInfo.vehicleList)
             {
                 if(id == veh.id && veh.lookaheadPosX == -999)
                 {
@@ -140,10 +140,10 @@ namespace tumvt.sumounity
             return isInsidePhsyicsArea;
 
         }
-        public static Vector2 SUMO_groundtruth_back (ref SumoSocketClient sock, string id){
+        public static Vector2 SUMO_groundtruth_back(ref SumoSocketClient sock, string id){
             // Get info from SUMO Stepinfo object
             SerializableVehicle currentVehicleState=null;
-            foreach(SerializableVehicle veh in sock.stepInfo.vehicleList)
+            foreach(SerializableVehicle veh in sock.StepInfo.vehicleList)
             {
                 if(id == veh.id)
                 {
@@ -163,7 +163,7 @@ namespace tumvt.sumounity
         {
             // Get info from SUMO Stepinfo object
             SerializableVehicle currentVehicleState = null;
-            foreach (SerializableVehicle veh in sock.stepInfo.vehicleList)
+            foreach (SerializableVehicle veh in sock.StepInfo.vehicleList)
             {
                 if (id == veh.id)
                 {
@@ -198,7 +198,7 @@ namespace tumvt.sumounity
         {
             // Get info from SUMO Stepinfo object
             SerializableVehicle currentVehicleState = null;
-            foreach (SerializableVehicle veh in sock.stepInfo.vehicleList)
+            foreach (SerializableVehicle veh in sock.StepInfo.vehicleList)
             {
                 if (id == veh.id)
                 {
@@ -236,7 +236,7 @@ namespace tumvt.sumounity
         public static Rigidbody SumoBicycleTeleport(ref SumoSocketClient sock, string id, Rigidbody rb, float steeringGain, ref PIDController pidControllerSpeed, ref PIDController pidControllerDist, ref Vector2 lookAheadMarker){
             // Get info from SUMO Stepinfo object
             SerializableVehicle currentVehicleState=null;
-            foreach(SerializableVehicle veh in sock.stepInfo.vehicleList)
+            foreach(SerializableVehicle veh in sock.StepInfo.vehicleList)
             {
                 if(id == veh.id)
                 {
@@ -268,7 +268,7 @@ namespace tumvt.sumounity
         public static (float,float,float) SumoVehicleControl(ref SumoSocketClient sock, string id, Rigidbody rb, float steeringGain, ref PIDController pidControllerSpeed, ref PIDController pidControllerDist, ref Vector2 lookAheadMarker){
             // Get info from SUMO Stepinfo object
             SerializableVehicle currentVehicleState=null;
-            foreach(SerializableVehicle veh in sock.stepInfo.vehicleList)
+            foreach(SerializableVehicle veh in sock.StepInfo.vehicleList)
             {
                 if(id == veh.id)
                 {
@@ -354,7 +354,7 @@ namespace tumvt.sumounity
         public static (float,float,float) SumoVehicleControlWarmup(ref SumoSocketClient sock, string id, Rigidbody rb, float steeringGain, ref PIDController pidControllerSpeed, ref PIDController pidControllerDist, ref Vector2 lookAheadMarker){
             // Get info from SUMO Stepinfo object
             SerializableVehicle currentVehicleState=null;
-            foreach(SerializableVehicle veh in sock.stepInfo.vehicleList)
+            foreach(SerializableVehicle veh in sock.StepInfo.vehicleList)
             {
                 if(id == veh.id)
                 {
@@ -444,7 +444,7 @@ namespace tumvt.sumounity
         public static int getVehicleStopState(ref SumoSocketClient sock, string id)
         {
             SerializableVehicle currentVehicle=null;
-            foreach(SerializableVehicle veh in sock.stepInfo.vehicleList)
+            foreach(SerializableVehicle veh in sock.StepInfo.vehicleList)
             {
                 if(id == veh.id)
                 {

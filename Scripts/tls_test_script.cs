@@ -64,7 +64,7 @@ public class tls_test_script : MonoBehaviour
             int closestArmIndex = 0;
             float minDistance = float.MaxValue;
 
-            foreach (var jxn in sock.stepInfo.junctionList)
+            foreach (var jxn in sock.StepInfo.junctionList)
             {
                 if (jxn.id == group.Key.JunctionID)
                 {
@@ -98,7 +98,7 @@ public class tls_test_script : MonoBehaviour
         {
             if (transform.name.Substring(0,8) == "RootNode" && transform.childCount == 3) // Looks through all components of tum_main for components that begin with "RootNode" and have exactly 3 children (for red, green, yellow)
             {
-                foreach (var junction in sock.stepInfo.junctionList)
+                foreach (var junction in sock.StepInfo.junctionList)
                 {
                     // Calculate distance between component and junction 
                     float distance = Vector2.Distance(new Vector2(transform.position.x, transform.position.z),
@@ -126,7 +126,7 @@ public class tls_test_script : MonoBehaviour
             Transform junctionTransform = pair.Key;
             int armIndex = armDict[junctionTransform];
             int junctionID = pair.Value.id;
-            Junction junction = sock.stepInfo.junctionList.FirstOrDefault(j => j.id == junctionID);
+            Junction junction = sock.StepInfo.junctionList.FirstOrDefault(j => j.id == junctionID);
             char armState = junction.state[armIndex];
             CheckPointLights(junctionTransform, armState);
         }
