@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -70,19 +71,35 @@ namespace tumvt.sumounity
 
         void SendAndReceiveData()
         {
-            networkStream = client.GetStream();
-            byte[] buffer = new byte[client.ReceiveBufferSize];
-
-            // ======================
-            //      Receive Data
-            // ====================== 
-            int bytesRead = networkStream.Read(buffer, 0, client.ReceiveBufferSize); //Getting data in Bytes from Python
-            string dataReceived = Encoding.UTF8.GetString(buffer, 0, bytesRead); //Converting byte data to string
-
-            if (dataReceived != null)
+            try
             {
-                ProcessReceivedData();
-                messageReceived = dataReceived;
+                networkStream = client.GetStream();
+                byte[] buffer = new byte[client.ReceiveBufferSize];
+
+                // ======================
+                //      Receive Data
+                // ====================== 
+                        
+                try
+                {
+                    int bytesRead = networkStream.Read(buffer, 0, client.ReceiveBufferSize); //Getting data in Bytes from Python
+                    string dataReceived = Encoding.UTF8.GetString(buffer, 0, bytesRead); //Converting byte data to string
+                    
+                    if (dataReceived != null)
+                    {
+                        ProcessReceivedData();
+                        messageReceived = dataReceived;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning("An error occurred while reading data from the network stream: " + ex.Message);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("An error occurred while receiving data: " + ex.Message);
             }
 
             // ======================

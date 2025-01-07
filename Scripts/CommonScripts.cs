@@ -3,8 +3,8 @@ using UnityEngine;
 
 public class PIController
 {
-    private float kp; // Proportional gain
-    private float ki; // Integral gain
+    public float kp; // Proportional gain
+    public float ki; // Integral gain
     
     private float integralError = 0f; // Accumulated error
 

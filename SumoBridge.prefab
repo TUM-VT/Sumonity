@@ -24,12 +24,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8679440075659690299}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.7, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &8679440075659690300
 MonoBehaviour:
@@ -44,18 +45,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   messageReceived: 
+  sendData: 0
   messageToSend: 
-  egoVehicleId: bike1
+  EgoVehicle: {fileID: 0}
   stepInfo:
     time: 0
-    trafficLightPhase: 0
     vehicleList: []
-  testVehGO: {fileID: 0}
-  EgoVehicle: {fileID: 0}
-  posOffset: {x: 0, y: 0, z: 0}
-  rotOffset: {x: 0, y: 0, z: 0}
+    junctionList: []
   vehicleCompositions: {fileID: 11400000, guid: c40a0c32fc4651a43b460c790cc0ff0c, type: 2}
-  passengerCarPrefab: {fileID: 0}
-  test: []
-  sendData: 0
-  exceptionIds: []
+  runInBackground: 0
+  useEgoRadius: 0
+  egoRadius: 100
