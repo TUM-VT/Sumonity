@@ -269,9 +269,7 @@ def clamp_value(value, min_value, max_value):
 def TraciServer(server,dt):
 
 
-    traci.start(["sumo-gui","-c", "Assets/SumoBridge/Sumo/sumoProject/tum_009.sumocfg","--num-clients", "1", "-S"])
-    # traci.start(["sumo-gui","-c", "sumoProject/tum_009.sumocfg","--num-clients", "1"])
-    # traci.start(["sumo-gui","-c", "sumoProject/tum_main_02.sumocfg","--num-clients", "1", "-S"])
+    traci.start(["sumo-gui","-c", "Assets/Sumonity/SumoTraCI/sumoProject/test_opensource_soma.sumocfg","--num-clients", "1", "-S"])
 
     # get list of junctions:
     junctionIDList = traci.junction.getIDList()

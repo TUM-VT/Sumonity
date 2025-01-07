@@ -41,8 +41,8 @@ public class SumoStarter : MonoBehaviour
 
     void StartSumo()
     {
-        string PYTHON_SCRIPT_PATH = "Assets/Sumonity/Sumo/socketServer.py";
-        string venvPath = "Assets/Sumonity/Sumo/venv/Scripts/activate.bat";
+        string PYTHON_SCRIPT_PATH = "Assets/Sumonity/SumoTraCI/socketServer.py";
+        string venvPath = "Assets/Sumonity/SumoTraCI/venv/Scripts/activate.bat";
         string unityWorkspacePath = System.IO.Path.GetDirectoryName(Application.dataPath);
 
         // Combine the Unity workspace path with the venv and Python script paths
@@ -58,10 +58,8 @@ public class SumoStarter : MonoBehaviour
         startInfo.CreateNoWindow = true;
         startInfo.UseShellExecute = false;
 
-        UnityEngine.Debug.Log("logtest");
         // Use 'call' to activate the venv and then run your Python script
         startInfo.Arguments = $"/c \"call {fullVenvPath} && python {fullPythonScriptPath}\"";
-        UnityEngine.Debug.Log("passes");
 
         // Start Process
         process = new Process();

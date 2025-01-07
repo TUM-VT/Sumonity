@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8679440075659690301}
   - component: {fileID: 8679440075659690300}
+  - component: {fileID: 2891936277448558506}
   m_Layer: 0
   m_Name: SumoBridge
   m_TagString: GameController
@@ -41,18 +42,33 @@ MonoBehaviour:
   m_GameObject: {fileID: 8679440075659690299}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 20d751b89fe2c104eaf878e210dd7e3a, type: 3}
+  m_Script: {fileID: 11500000, guid: 981dc06c0ad33414eb645704c0d9264d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   messageReceived: 
-  sendData: 0
+  sendData: 1
   messageToSend: 
   EgoVehicle: {fileID: 0}
   stepInfo:
     time: 0
     vehicleList: []
     junctionList: []
-  vehicleCompositions: {fileID: 11400000, guid: c40a0c32fc4651a43b460c790cc0ff0c, type: 2}
+  vehicleCompositions: {fileID: 11400000, guid: 4e0f2e49caeca254cb1f493ac0a28099, type: 2}
   runInBackground: 0
   useEgoRadius: 0
   egoRadius: 100
+--- !u!114 &2891936277448558506
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8679440075659690299}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed5e963c4703f624789d3dc054f2eb3c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  startSumoOnStart: 1
+  ProcessID: 
+  error: 
