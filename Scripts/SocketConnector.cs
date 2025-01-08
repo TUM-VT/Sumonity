@@ -10,7 +10,7 @@ using System.Text;
 
 namespace tumvt.sumounity
 {
-    public class SocketClient
+    public class SocketConnector
     {
 
         public string connectionIP = "127.0.0.1";
@@ -27,13 +27,13 @@ namespace tumvt.sumounity
         NetworkStream networkStream;
         bool isRunning;
 
-        public SocketClient()
+        public SocketConnector()
         {
             connectionIP = "127.0.0.1";
             connectionPort = 25001;
         }
 
-        public SocketClient(string ipAdress, int port)
+        public SocketConnector(string ipAdress, int port)
         {
             connectionIP = ipAdress;
             connectionPort = port;

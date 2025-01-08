@@ -79,7 +79,7 @@ namespace tumvt.sumounity
         [SerializeField] private VehicleSetup vehicleSetup;
 
         public bool RunInBackground => optimizationSettings.runInBackground;
-        private SocketClient socketClient;
+        private SocketConnector SocketConnector;
 
 
 
@@ -91,9 +91,9 @@ namespace tumvt.sumounity
 
         void Start()
         {
-            socketClient = new SocketClient();
-            Debug.Log("Starting Client with " + socketClient.connectionIP + " on port " + socketClient.connectionPort);
-            socketClient.Start();
+            SocketConnector = new SocketConnector();
+            Debug.Log("Starting Client with " + SocketConnector.connectionIP + " on port " + SocketConnector.connectionPort);
+            SocketConnector.Start();
         }
 
         void Update()
@@ -101,7 +101,7 @@ namespace tumvt.sumounity
             // ======================
             //      Receive Data
             // ====================== 
-            debugData.messageReceived = socketClient.messageReceived;
+            debugData.messageReceived = SocketConnector.messageReceived;
 
             if (debugData.messageReceived != null)
             {
@@ -128,7 +128,7 @@ namespace tumvt.sumounity
                 ego.rotation = egoRot;
 
                 debugData.messageToSend = JsonConvert.SerializeObject(ego);
-                socketClient.messageToSend = debugData.messageToSend;
+                SocketConnector.messageToSend = debugData.messageToSend;
             }
         }
 
@@ -147,7 +147,7 @@ namespace tumvt.sumounity
 
         private void OnApplicationQuit()
         {
-           socketClient.Close();
+           SocketConnector.Close();
         }
 
         void UpdateVehiclesDictionary()
