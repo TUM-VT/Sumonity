@@ -120,7 +120,8 @@ namespace tumvt.sumounity
                 vehicleSetup,
                 simulatorVehicleInfo,
                 optimizationSettings,
-                vehicleToggles);
+                vehicleToggles,
+                optimizationSettings.isTeleportOnlyMode);
 
             SumoSocketClientHelper.RemoveNonExistentActors(
                 vehicleSetup,

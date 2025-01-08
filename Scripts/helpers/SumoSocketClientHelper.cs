@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using tum_car_controller;
 
 namespace tumvt.sumounity
 {
@@ -49,7 +50,8 @@ namespace tumvt.sumounity
             VehicleSetup vehicleSetup,
             SimulatorVehicleInfo simulatorVehicleInfo,
             OptimizationSettings optimizationSettings,
-            VehicleToggles vehicleToggles)
+            VehicleToggles vehicleToggles,
+            bool isTeleportOnlyMode)
         {
             if(runInBackground) return;
 
@@ -69,14 +71,15 @@ namespace tumvt.sumounity
 
                 if (!isInRadius) continue;
 
-                SpawnNewVehicle(serVehicle, vehicleSetup, vehicleToggles);
+                SpawnNewVehicle(serVehicle, vehicleSetup, vehicleToggles, isTeleportOnlyMode);
             }
         }
 
         private static void SpawnNewVehicle(
             SerializableVehicle serVehicle, 
             VehicleSetup vehicleSetup,
-            VehicleToggles vehicleToggles)
+            VehicleToggles vehicleToggles,
+            bool isTeleportOnlyMode)
         {
             GameObject vehObj;
             float specificHeightOfCoordianteFrame;
@@ -96,6 +99,13 @@ namespace tumvt.sumounity
             
             GameObject veh = Object.Instantiate(vehObj, pos, rot);
             veh.name = $"{serVehicle.id}-{serVehicle.vehicleType}-{vehObj.name}";
+
+   
+            CarController carController = veh.GetComponent<CarController>();
+            if (carController != null)
+            {
+                carController.SetTeleportOnlyMode(isTeleportOnlyMode);
+            }
 
             ApplyRandomColor(veh);
             SetupVehicleController(veh, serVehicle.id);

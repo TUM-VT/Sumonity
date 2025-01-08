@@ -114,29 +114,31 @@ namespace tumvt.sumounity
             return new Vector2(cos * tx - sin * ty, sin * tx + cos * ty);
         }
 
+        // this will be used in the future to optimize simulation speed for user studies.
         public static bool SumoVehicleDetect(ref SumoSocketClient sock, string id){
             // Get info from SUMO Stepinfo object
-            bool isInsidePhsyicsArea=false;	
-            bool VehicleFound=false;
-            SerializableVehicle currentVehicleState=null;
-            foreach(SerializableVehicle veh in sock.StepInfo.vehicleList)
-            {
-                if(id == veh.id && veh.lookaheadPosX == -999)
-                {
-                    isInsidePhsyicsArea = false;
-                    VehicleFound=true;
-                    break;
-                }
-                else if(id == veh.id && veh.lookaheadPosX != -999)
-                {
-                    isInsidePhsyicsArea = true;
-                    VehicleFound=true;
-                    break;
-                }
-            }
-            if (VehicleFound==false)
-                Debug.LogWarning("There is no sumo object with id: "+id);
+            // bool isInsidePhsyicsArea=false;	
+            // bool VehicleFound=false;
+            // SerializableVehicle currentVehicleState=null;
+            // foreach(SerializableVehicle veh in sock.StepInfo.vehicleList)
+            // {
+            //     if(id == veh.id && veh.lookaheadPosX == -999)
+            //     {
+            //         isInsidePhsyicsArea = false;
+            //         VehicleFound=true;
+            //         break;
+            //     }
+            //     else if(id == veh.id && veh.lookaheadPosX != -999)
+            //     {
+            //         isInsidePhsyicsArea = true;
+            //         VehicleFound=true;
+            //         break;
+            //     }
+            // }
+            // if (VehicleFound==false)
+            //     Debug.LogWarning("There is no sumo object with id: "+id);
 
+            bool isInsidePhsyicsArea = true;
             return isInsidePhsyicsArea;
 
         }

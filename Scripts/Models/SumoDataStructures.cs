@@ -25,6 +25,7 @@ namespace tumvt.sumounity
         public bool useEgoRadius = false;
         [Range(0, 500)] 
         public float egoRadius = 100;
+        public bool isTeleportOnlyMode = false;
     }
 
     [System.Serializable]
