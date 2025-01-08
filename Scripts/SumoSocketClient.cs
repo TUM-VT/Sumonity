@@ -20,6 +20,7 @@ namespace tumvt.sumounity
             [Tooltip("Message received from/to SUMO")]
             public string messageReceived;
             public string messageToSend;
+            public bool showDebugGizmoSimulatorEgo = false;
         }
         [Header("Socket Communication")]
         [SerializeField] private DebugData debugData;
@@ -46,7 +47,7 @@ namespace tumvt.sumounity
         private class OptimizationSettings
         {
             [Tooltip("If enabled SUMO-Simulation runs in background and no vehicles are spawned")]
-            public bool runInBackground = false;
+            public bool RunSumoInBackground = false;
             public bool useEgoRadius = false;
             [Range(0, 500)] 
             public float egoRadius = 100;
@@ -78,7 +79,7 @@ namespace tumvt.sumounity
         [Header("SUMO Vehicles")]
         [SerializeField] private VehicleSetup vehicleSetup;
 
-        public bool RunInBackground => optimizationSettings.runInBackground;
+        public bool RunSumoInBackground => optimizationSettings.RunSumoInBackground;
         private SocketConnector SocketConnector;
 
 
@@ -106,8 +107,6 @@ namespace tumvt.sumounity
             if (debugData.messageReceived != null)
             {
                 DeserializeStepInfo(debugData.messageReceived);
-
-
                 UpdateVehiclesDictionary();
             }        
 
@@ -154,10 +153,63 @@ namespace tumvt.sumounity
         {
             float time = _stepInfo.time;
 
+            // check for new vehicles and Add them
+            CheckForNewVehiclesAndAdd();
+
+            // check for non existent vehicles in sumo
+            RemoveNonExistentActors();
+            
+            // check if sumo runs in background -> delete all actors
+            RemoveAllActorsIfSumoInBackgroundMode();
+            
+        }
+
+        public void RemoveAllActorsIfSumoInBackgroundMode(){
+            if(RunSumoInBackground)
+            {
+
+                // Destroy all vehicles
+                if(vehicleSetup.vehDict.Count>0)
+                {
+                    List<string> keysToRemove = new List<string>();
+                    //Debug.LogError(vehicleSetup.vehDict.Count);
+                    foreach (KeyValuePair<string, GameObject> kvp in vehicleSetup.vehDict)
+                    {  
+                        if(kvp.Value.gameObject.CompareTag("Bus") && !vehicleToggles.busEnable)
+                        {
+                            Debug.LogWarning("Bus is not destroyed in background mode!");
+                        }
+                        else if(kvp.Value.gameObject.CompareTag("Ego"))
+                        {
+                            Debug.LogWarning("Ego is not destroyed in background mode!");
+                        }
+                        else if(kvp.Value.gameObject.CompareTag("Person") && !vehicleToggles.pedestrianEnable)
+                        {
+                            Debug.LogWarning("Person is not destroyed");
+                        }
+                        else
+                        {
+                            Debug.Log("Destroyed Vehicle = " + kvp.Value.gameObject.name);   
+                            Destroy(kvp.Value.gameObject);
+                            keysToRemove.Add(kvp.Key);
+                            
+                        }
+                    }
+
+                    foreach (string key in keysToRemove)
+                    {
+                        vehicleSetup.vehDict.Remove(key);
+                    }
+                    //vehicleSetup.vehDict.Clear();
+                }
+            }
+        }
+
+        public void CheckForNewVehiclesAndAdd(){
             foreach (SerializableVehicle serVehicle in _stepInfo.vehicleList)
             {   
-                //check for every vehicle if its a bus, a pedestrian or if backgorund mode is off
-                if(serVehicle.vehicleType == "bus" || !RunInBackground || serVehicle.vehicleType == "pedestrian")
+                //check for every vehicle if
+                if(!RunSumoInBackground)
                 {
                     string vehId = serVehicle.id;
 
@@ -170,9 +222,10 @@ namespace tumvt.sumounity
                             simulatorVehicleInfo.egoVehicle.position) <= optimizationSettings.egoRadius;
                     }
                     
+                    // If dictionary does not contain key spawn a vehicle. Do this only if it's not the ego vehicle 
+                    // and if the vehicle is in the defined radius (for the default case the radius can be seen as infite)
                     if (!containsKey && !(vehId == simulatorVehicleInfo.egoVehicleId) && isInRadius)
-                    { // If dictionary does not contain key spawn a vehicle. Do this only if it's not the ego vehicle and if the vehicle is in the defined radius (for the default case the radius can be seen as infite)
-
+                    {
                         GameObject vehObj;
                         float specificHeightOfCoordianteFrame;
 
@@ -258,8 +311,10 @@ namespace tumvt.sumounity
                     
                 }
             }
+        }
 
-            // check for non existent vehicles in sumo
+        public void RemoveNonExistentActors()
+        {
             try
             {
                 foreach (KeyValuePair<string, GameObject> kvp in vehicleSetup.vehDict)
@@ -273,21 +328,7 @@ namespace tumvt.sumounity
                             break;
                         }
                     }
-                    if (idIsContained && optimizationSettings.useEgoRadius)
-                    {
-                        // Check for position in BBOX
-                        // if false
-                        // destroy
-                        foreach (SerializableVehicle serVehicle in _stepInfo.vehicleList)
-                        {
-                            if (Vector3.Distance(new Vector3(serVehicle.positionX, 0, serVehicle.positionY), 
-                                simulatorVehicleInfo.egoVehicle.position) <= optimizationSettings.egoRadius)
-                            { // Check Distance to EgoVehicle
-                                Destroy(kvp.Value.gameObject);
-                                vehicleSetup.vehDict.Remove(kvp.Key);
-                            }
-                        }
-                    }
+
                     if (!idIsContained)
                     {
                         Destroy(kvp.Value.gameObject);
@@ -306,51 +347,11 @@ namespace tumvt.sumounity
                 // Code that always runs, even if an exception is thrown
                 // Debug.LogWarning("Cleanup code in the finally block.");
             }
-            
-            if(RunInBackground)
-            {
-
-                // Destroy all vehicles
-                if(vehicleSetup.vehDict.Count>0)
-                {
-                    List<string> keysToRemove = new List<string>();
-                    //Debug.LogError(vehicleSetup.vehDict.Count);
-                    foreach (KeyValuePair<string, GameObject> kvp in vehicleSetup.vehDict)
-                    {  
-                        if(kvp.Value.gameObject.CompareTag("Bus") && !vehicleToggles.busEnable)
-                        {
-                            Debug.LogWarning("Bus is not destroyed in background mode!");
-                        }
-                        else if(kvp.Value.gameObject.CompareTag("Ego"))
-                        {
-                            Debug.LogWarning("Ego is not destroyed in background mode!");
-                        }
-                        else if(kvp.Value.gameObject.CompareTag("Person") && !vehicleToggles.pedestrianEnable)
-                        {
-                            Debug.LogWarning("Person is not destroyed");
-                        }
-                        else
-                        {
-                            Debug.Log("Destroyed Vehicle = " + kvp.Value.gameObject.name);   
-                            Destroy(kvp.Value.gameObject);
-                            keysToRemove.Add(kvp.Key);
-                            
-                        }
-                    }
-
-                    foreach (string key in keysToRemove)
-                    {
-                        vehicleSetup.vehDict.Remove(key);
-                    }
-                    //vehicleSetup.vehDict.Clear();
-                }
-            }
-            
         }
 
-        public void SetRunInBackground(bool value)
+        public void SetRunSumoInBackground(bool value)
         {
-            optimizationSettings.runInBackground = value;
+            optimizationSettings.RunSumoInBackground = value;
         }
 
         public void SetBusEnable(bool value)
@@ -365,7 +366,7 @@ namespace tumvt.sumounity
 
         private void OnDrawGizmos()
         {
-            if (optimizationSettings.useEgoRadius && simulatorVehicleInfo.egoVehicle != null)
+            if (debugData.showDebugGizmoSimulatorEgo)
             {
                 Gizmos.color = new Color(1, 0, 0, 0.5f);
                 Gizmos.DrawSphere(simulatorVehicleInfo.egoVehicle.position, 2);
