@@ -78,10 +78,7 @@ namespace tumvt.sumounity
         [Header("SUMO Vehicles")]
         [SerializeField] private VehicleSetup vehicleSetup;
 
-
-        // Properties for external access
         public bool RunInBackground => optimizationSettings.runInBackground;
-
         private SocketClient socketClient;
 
 
@@ -108,16 +105,9 @@ namespace tumvt.sumounity
 
             if (debugData.messageReceived != null)
             {
-                try
-                {
-                    _stepInfo = JsonConvert.DeserializeObject<SumoSimulationStepInfo>(debugData.messageReceived);
-                }
-                catch (JsonException ex)
-                {
-                    Debug.LogWarning($"Json Deserialization of SumoStep failed! Exception: {ex.Message}");
-                    _stepInfo = new SumoSimulationStepInfo();
-                }
-                
+                DeserializeStepInfo(debugData.messageReceived);
+
+
                 UpdateVehiclesDictionary();
             }        
 
@@ -139,6 +129,19 @@ namespace tumvt.sumounity
 
                 debugData.messageToSend = JsonConvert.SerializeObject(ego);
                 socketClient.messageToSend = debugData.messageToSend;
+            }
+        }
+
+        public void DeserializeStepInfo(string message)
+        {
+            try
+            {
+                _stepInfo = JsonConvert.DeserializeObject<SumoSimulationStepInfo>(message);
+            }
+            catch (JsonException ex)
+            {
+                Debug.LogWarning($"Json Deserialization of SumoStep failed! Exception: {ex.Message}");
+                _stepInfo = new SumoSimulationStepInfo();
             }
         }
 
