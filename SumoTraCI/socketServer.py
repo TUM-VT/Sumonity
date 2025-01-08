@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 from multiprocessing.connection import Client
 import time
 import threading
@@ -12,16 +13,7 @@ import numpy as np
 from include.UtilityFunctions import SocketServerSimple
 from include.UtilityFunctions import SumoVehicle
 from include.UtilityFunctions import SumoSimulationStepInfo
-from include.path_calculator import (
-    find_point_ahead_on_path,
-    calculate_distance,
-    closest_points,
-    remove_duplicates,
-    remove_before_point,
-    flatten_and_remove_duplicates,
-    closest_segment_point_ahead,
-    find_point_at_distance
-)
+from include.path_calculator import find_point_ahead_on_path
 from include.vehicle_manager import VehicleManager
 from include.simulation_utils import is_valid_json, extract_number, clamp_value
 
@@ -155,13 +147,22 @@ def ServerStarted(server):
     thread2 = threading.Thread(target=TraciServer, args=(server, dt))
     thread2.start()
 
-
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='SUMO-Unity Bridge Server')
+    parser.add_argument('--dt', 
+                       type=float, 
+                       required=True,
+                       help='Simulation timestep in seconds')
+    return parser.parse_args()
 
 # ---=========---
 #      MAIN
 # ---=========---
 if __name__ == '__main__':
-    dt = 0.05
+    args = parse_arguments()
+    # dt must be aligned with the unity simulation
+    dt = args.dt
+    
     server = SocketServerSimple("127.0.0.1", 25001, dt)
     server.messageToSend = "default"
 

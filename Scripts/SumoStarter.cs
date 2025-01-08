@@ -17,6 +17,7 @@ public class SumoStarter : MonoBehaviour
     [SerializeField]
     public string ProcessID;
     public string error = null;
+    public float dt = 0.1f;
 
     private Thread sumoThread { get; set; }
     private Process process { get; set; }
@@ -41,7 +42,7 @@ public class SumoStarter : MonoBehaviour
 
     void StartSumo()
     {
-        string PYTHON_SCRIPT_PATH = "Assets/Sumonity/SumoTraCI/socketServer.py";
+        string PYTHON_SCRIPT_PATH = "Assets/Sumonity/SumoTraCI/socketServer.py --dt " + dt.ToString();
         string venvPath = "Assets/Sumonity/SumoTraCI/venv/Scripts/activate.bat";
         string unityWorkspacePath = System.IO.Path.GetDirectoryName(Application.dataPath);
 
