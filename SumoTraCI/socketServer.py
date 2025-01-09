@@ -77,7 +77,7 @@ def predict_future_position(vehicle_id, minLookaheadDistance, maxLookaheadDistan
         return (0)
 
 def TraciServer(server,dt):
-    traci.start(["sumo-gui","-c", "Assets/Sumonity/SumoTraCI/sumoProject/test_opensource_soma.sumocfg","--num-clients", "1", "-S"])
+    traci.start(["sumo-gui","-c", "Assets/Sumonity/SumoTraCI/sumoProject/opensource.sumocfg","--num-clients", "1", "-S"])
     junctionIDList = traci.junction.getIDList()
     traci.setOrder(0)
 
