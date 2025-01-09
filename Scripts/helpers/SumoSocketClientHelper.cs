@@ -93,19 +93,20 @@ namespace tumvt.sumounity
 
             Vector3 pos = new Vector3(
                 serVehicle.positionX, 
-                specificHeightOfCoordianteFrame, 
+                specificHeightOfCoordianteFrame+2f, // additional height, so cars drop onto the road plane
                 serVehicle.positionY);
             Quaternion rot = Quaternion.Euler(0, serVehicle.rotation + 180f, 0);
             
             GameObject veh = Object.Instantiate(vehObj, pos, rot);
             veh.name = $"{serVehicle.id}-{serVehicle.vehicleType}-{vehObj.name}";
 
-   
-            CarController carController = veh.GetComponent<CarController>();
-            if (carController != null)
-            {
-                carController.SetTeleportOnlyMode(isTeleportOnlyMode);
-            }
+
+            // TODO: fix implementation to work with general vehicle controllers
+            // CarController carController = veh.GetComponent<CarController>();
+            // if (carController != null)
+            // {
+            //     carController.SetTeleportOnlyMode(isTeleportOnlyMode);
+            // }
 
             ApplyRandomColor(veh);
             SetupVehicleController(veh, serVehicle.id);

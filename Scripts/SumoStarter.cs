@@ -4,6 +4,7 @@ using UnityEngine;
 using System.Diagnostics;
 using System.Threading;
 using UnityEditor;
+using System.Globalization;
 
 // © 2024 Johannes Lindner <johannes.lindner@tum.de>
 
@@ -42,7 +43,7 @@ public class SumoStarter : MonoBehaviour
 
     void StartSumo()
     {
-        string PYTHON_SCRIPT_PATH = "Assets/Sumonity/SumoTraCI/socketServer.py --dt " + dt.ToString();
+        string PYTHON_SCRIPT_PATH = "Assets/Sumonity/SumoTraCI/socketServer.py --dt " + dt.ToString(new CultureInfo("en-US"));
         string venvPath = "Assets/Sumonity/SumoTraCI/venv/Scripts/activate.bat";
         string unityWorkspacePath = System.IO.Path.GetDirectoryName(Application.dataPath);
 
