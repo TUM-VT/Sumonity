@@ -13,7 +13,10 @@ MonoBehaviour:
   m_Name: Vehicle Composition
   m_EditorClassIdentifier: 
   PassengerCars:
-  - {fileID: 7193673960299363686, guid: d6b7a1364dce5894a9b6d58729af2d2f, type: 3}
+  - {fileID: 5330083007877513636, guid: 2e2a154c428933a448716c93ea347bf7, type: 3}
+  - {fileID: 4139270735534037461, guid: 310cfcde931ace444b0b21d84e03a1cc, type: 3}
+  - {fileID: 8615713714832918619, guid: 86aa788606cb5de438d1fb39085dd4d0, type: 3}
+  - {fileID: 3295844700660033618, guid: fc2187e436f3ada448c306b53a6f1fa5, type: 3}
   Trucks: []
   Bicycles:
   - {fileID: 7193673960299363686, guid: cb6868bfa429f7146a64a88f4028c1cc, type: 3}

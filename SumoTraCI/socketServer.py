@@ -83,19 +83,33 @@ def TraciServer(server,dt):
 
     step = 0
     while True:
+        start_time = time.time()
         traci.simulationStep() # Trgger one timestep in the sumo simulation
         step += 1
         time.sleep(dt)
 
         simulationTime = traci.simulation.getTime()
 
+
+        # ==============================
+        # Send Values from SUMO to Unity
+        # ==============================
+
+
         # do not get confused by the name vehicle list. this should be actor list ;)
         vehicleList = list()
+
+
 
         # Get common vehicles
         idList = traci.vehicle.getIDList()
         for i in range(0,len(idList)):
             id = idList[i]
+
+            if id == "bike1":
+                # lookaheadPos = (0,0)
+                continue
+
             pos = traci.vehicle.getPosition(id)
             rot = traci.vehicle.getAngle(id)
             rot = rot+180
@@ -107,8 +121,7 @@ def TraciServer(server,dt):
             minLookaheadDistance = 7
             maxLookaheadDistance = 10
             lookaheadPos = predict_future_position(id, minLookaheadDistance, maxLookaheadDistance, pos, junctionIDList, speed)  
-            # Debug target point
-            # print("Point 10 meters ahead:", lookaheadPos)
+
 
 
             veh = SumoVehicle(id,pos,rot,speed,signals,vehType,lookaheadPos)
@@ -135,6 +148,41 @@ def TraciServer(server,dt):
         sumoSimStep = SumoSimulationStepInfo(simulationTime,vehicleList,trafficLightPhase).__dict__
         server.messageToSend = json.dumps(sumoSimStep)
        
+        # ====================================
+        # Receive Values from SUMO to Unity
+        # ====================================
+        try: 
+            msg = json.loads(server.messageReceived)
+            edgeID = ""
+            laneVal = 1
+            x = msg["positionX"]
+            y = msg["positionY"]
+            angleVal = msg["rotation"]+90
+            keepRouteVal = 2
+            matchThresholdVal = 100
+            traci.vehicle.moveToXY(msg["id"], edgeID, laneVal, x, y, angleVal, keepRoute=keepRouteVal, matchThreshold=matchThresholdVal)
+        except Exception as e:
+            print("Error: ", str(e))
+            pass
+
+        execution_time = time.time() - start_time
+        temp_dt = dt - execution_time
+        step += 1
+
+        if temp_dt < 0:
+            print(f"Warning: Execution time exceeds the specified time step. temp_dt: {temp_dt}")
+            temp_dt = 0
+
+        print("Step:", step, "Time:", traci.simulation.getTime(), "Execution Time:", execution_time, "Temp DT:", temp_dt)
+        time.sleep(temp_dt)
+
+
+        execution_time = time.time() - start_time
+        print("Total Execution Time:", execution_time)
+
+
+
+    
     traci.close()
 
 def ServerStarted(server):
