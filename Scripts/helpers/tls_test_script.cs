@@ -6,7 +6,7 @@ using System.Linq;
 public class tls_test_script : MonoBehaviour
 {
     public GameObject targetGameObject;
-    public string componentName;
+    // public string componentName;
     public Dictionary<Transform, Junction> junctionDict = new Dictionary<Transform, Junction>(); // matches each unity TL node to a junction
     public Dictionary<Transform, int> armDict = new Dictionary<Transform, int>(); // matches each unity TL node to a junction arm
     

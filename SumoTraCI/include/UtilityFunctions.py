@@ -1,25 +1,45 @@
 # UtilityFunctions.py
 import socket
 import time
+import traci
 
 
 class SumoSimulationStepInfo:
     time = 0
-    trafficLightPhase = 0
-    vehicleList = list()      
-    #personList = list()
+    trafficLightList = list()
+    vehicleList = list()
+    # message = "no message"
+    tlsList = list()  
+    # personalList = list()
 
-    def __init__(self, _time, _vehicleList, _trafficLightPhase, _personList=list()):
+    def __init__(self, _time, _vehicleList, _junctionList):
         self.time = _time
         self.vehicleList = _vehicleList
-        self.trafficLightPhase = _trafficLightPhase
-        #self.personList = _personList
+        self.junctionList = _junctionList
 
     def getVehicleInfo(self, id):
         for veh in self.vehicleList:
             if veh["id"]==id:
                 return veh
 
+class TrafficLight:
+    state = ""
+    def __init__(self, _state):
+        self.state = _state
+
+class Junction:
+    id = 0
+    pos = [0,0]
+    phase = 0
+    state = ""
+    armPos = [[0,0]]
+
+    def __init__(self,_id,_pos,_phase,_state,_armpos):
+        self.id = _id
+        self.pos = _pos
+        self.phase = _phase
+        self.state = _state
+        self.armPos = _armpos
 
 class SumoVehicle:
     id = ""
@@ -31,7 +51,8 @@ class SumoVehicle:
     vehicleType = ""
     lookaheadPosX = 0
     lookaheadPosY = 0
-    def __init__(self, _id, _pos, _rot, _speed, _signals, _vehType,_lookaheadPos):
+    stopState = 0
+    def __init__(self, _id, _pos, _rot, _speed, _signals, _vehType,_lookaheadPos, _stopState):
         self.id = _id
         self.positionX = _pos[0]
         self.positionY = _pos[1]
@@ -41,6 +62,7 @@ class SumoVehicle:
         self.vehicleType = _vehType
         self.lookaheadPosX = _lookaheadPos[0]
         self.lookaheadPosY = _lookaheadPos[1]
+        self.stopState = _stopState
 
 class SocketServerSimple:
     HOST = "127.0.0.1"
@@ -88,3 +110,4 @@ class SocketServerSimple:
                 pass
             time.sleep(self.delta)
         sock.close()
+

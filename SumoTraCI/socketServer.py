@@ -12,6 +12,8 @@ import numpy as np
 
 from include.UtilityFunctions import SocketServerSimple
 from include.UtilityFunctions import SumoVehicle
+from include.UtilityFunctions import TrafficLight
+from include.UtilityFunctions import Junction
 from include.UtilityFunctions import SumoSimulationStepInfo
 from include.path_calculator import find_point_ahead_on_path
 from include.vehicle_manager import VehicleManager
@@ -77,7 +79,16 @@ def predict_future_position(vehicle_id, minLookaheadDistance, maxLookaheadDistan
         return (0)
 
 def TraciServer(server,dt):
-    traci.start(["sumo-gui","-c", "Assets/Sumonity/SumoTraCI/sumoProject/opensource.sumocfg","--num-clients", "1", "-S"])
+    useWarmStart = False # beta feature, not fully implemented yet
+    if useWarmStart:
+        traci.start(["sumo-gui","-c", "Assets/Sumonity/SumoTraCI/sumoProject/opensource.sumocfg","--num-clients", "1", "--load-state", "Assets/Sumonity/SumoTraCI/sumoProject/warm_up/warm_up_state.xml", "-S"])
+    else:
+        traci.start(["sumo-gui","-c", "Assets/Sumonity/SumoTraCI/sumoProject/opensource.sumocfg","--num-clients", "1", "-S"])
+
+
+
+        
+
     junctionIDList = traci.junction.getIDList()
     traci.setOrder(0)
 
@@ -92,15 +103,13 @@ def TraciServer(server,dt):
 
 
         # ==============================
-        # Send Values from SUMO to Unity
+        # Send Data from SUMO to Unity
         # ==============================
 
+        # ----====Vehicles====----
 
         # do not get confused by the name vehicle list. this should be actor list ;)
         vehicleList = list()
-
-
-
         # Get common vehicles
         idList = traci.vehicle.getIDList()
         for i in range(0,len(idList)):
@@ -123,10 +132,11 @@ def TraciServer(server,dt):
             lookaheadPos = predict_future_position(id, minLookaheadDistance, maxLookaheadDistance, pos, junctionIDList, speed)  
 
 
-
-            veh = SumoVehicle(id,pos,rot,speed,signals,vehType,lookaheadPos)
+            stop_state = 0
+            veh = SumoVehicle(id,pos,rot,speed,signals,vehType,lookaheadPos,stop_state)
             vehicleList.append(veh.__dict__)
 
+        # ----====Persons====----
         # Get persons/pedestrians
         idList = traci.person.getIDList()
         for i in range(0,len(idList)):
@@ -144,8 +154,33 @@ def TraciServer(server,dt):
             veh = SumoVehicle(id,pos,rot,speed,signals,vehType,lookaheadPos)
             vehicleList.append(veh.__dict__)
 
-        trafficLightPhase = 1
-        sumoSimStep = SumoSimulationStepInfo(simulationTime,vehicleList,trafficLightPhase).__dict__
+
+        # ----====TrafficLights====----
+        # get tls
+        junctionIDList = traci.trafficlight.getIDList()
+        junctionList = list()
+        for junctionID in junctionIDList:
+            tlsStateAllStreams = traci.trafficlight.getRedYellowGreenState(junctionID)
+            controlledLanes = traci.trafficlight.getControlledLanes(junctionID)
+            tlsState = ''
+            armPos = []
+            last_lane = ''
+            for i, lane in enumerate(controlledLanes): #Assumes simple signal plan, no priority left turning etc.
+                if lane[:-2] != last_lane:
+                    last_lane = lane[:-2]
+                    try:
+                        armPos.append(traci.lane.getShape(traci.trafficlight.getControlledLinks(junctionID)[i][0][2])[0])
+                        tlsState += tlsStateAllStreams[i] # tlsState a string with with one Char for each arm
+                    except:
+                        traci.simulation.writeMessage('Cant find lane since pedestrian crossing')
+            tls = TrafficLight(tlsState)
+            jxn = Junction(junctionID,traci.junction.getPosition(junctionID),traci.trafficlight.getPhase(junctionID),tlsState,armPos)
+            junctionList.append(jxn.__dict__)
+
+
+
+
+        sumoSimStep = SumoSimulationStepInfo(simulationTime,vehicleList,junctionList).__dict__
         server.messageToSend = json.dumps(sumoSimStep)
        
         # ====================================
