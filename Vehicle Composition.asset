@@ -20,7 +20,8 @@ MonoBehaviour:
   Trucks: []
   Bicycles:
   - {fileID: 7193673960299363686, guid: cb6868bfa429f7146a64a88f4028c1cc, type: 3}
-  Persons: []
+  Persons:
+  - {fileID: 4416926081852918481, guid: 96c80afca5cbc074394f81b985310c58, type: 3}
   Busses:
   - {fileID: 7193673960299363686, guid: 6985eddb08f59a2499cd85bbce49890a, type: 3}
   Taxis:

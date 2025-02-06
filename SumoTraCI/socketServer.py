@@ -9,6 +9,7 @@ import traci
 import traci.constants as tc
 import json
 import numpy as np
+import math
 
 from include.UtilityFunctions import SocketServerSimple
 from include.UtilityFunctions import SumoVehicle
@@ -143,15 +144,26 @@ def TraciServer(server,dt):
             id = idList[i]
             pos = traci.person.getPosition(id)
             rot = traci.person.getAngle(id)
-            rot = rot+180
+            rot = rot+220  # Adjust rotation to match Unity's coordinate system (why 220?)
             speed = traci.person.getSpeed(id)
             vehType = traci.person.getVehicleClass(id)
             signals = -1
 
-            # get lookahaed point
-            lookaheadPos = (0,0)
-
-            veh = SumoVehicle(id,pos,rot,speed,signals,vehType,lookaheadPos)
+            # Calculate lookahead point based on position and heading
+            # Convert heading angle from degrees to radians
+            # Note: After adding 180, 0 degrees points west, 90 degrees points south
+            heading_rad = math.radians(rot)  # Negative to correct the direction
+            
+            # Define lookahead distance
+            lookahead_dist = 2.0  # 2 meters ahead
+            
+            # Calculate lookahead point using trigonometry
+            lookahead_x = pos[0] + lookahead_dist * math.cos(heading_rad)
+            lookahead_y = pos[1] + lookahead_dist * math.sin(heading_rad)
+            lookaheadPos = (lookahead_x, lookahead_y)
+            
+            stop_state = 0
+            veh = SumoVehicle(id,pos,rot,speed,signals,vehType,lookaheadPos,stop_state)
             vehicleList.append(veh.__dict__)
 
 

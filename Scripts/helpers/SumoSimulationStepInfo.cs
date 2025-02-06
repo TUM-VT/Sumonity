@@ -337,18 +337,6 @@ namespace tumvt.sumounity
             float torqueInput = (torqueInput1+torqueInput2)/2;
             torqueInput = Mathf.Clamp(torqueInput,-1f,1f);
             
-            if (false){
-                // Write data to CSV file
-                string filePath = "/home/ludwig-20-04/unity_ws/data/simDataVehicle.csv"; // Replace with your desired file path
-                using (StreamWriter writer = new StreamWriter(filePath, true))
-                {
-                    string timeStamp = Time.time.ToString(); // Unity time stamp
-                    string data = $"{timeStamp},{steeringValue},{torqueInput},{desiredVelocity},{rb.position.x},{rb.position.z},{currentVehicleState.positionX},{currentVehicleState.positionY},{currentVelocity}";
-
-                    // copilot eidit my data string and include the postion of the ridigdbody and the sumo
-                    writer.WriteLine(data);
-                }
-            }
             return (steeringValue, torqueInput, desiredVelocity);
 
         }
@@ -427,19 +415,48 @@ namespace tumvt.sumounity
             float torqueInput = (torqueInput1+torqueInput2)/2;
             torqueInput = Mathf.Clamp(torqueInput,-1f,1f);
             
-            if (false){
-                // Write data to CSV file
-                string filePath = "/home/ludwig-20-04/unity_ws/data/simDataVehicle.csv"; // Replace with your desired file path
-                using (StreamWriter writer = new StreamWriter(filePath, true))
-                {
-                    string timeStamp = Time.time.ToString(); // Unity time stamp
-                    string data = $"{timeStamp},{steeringValue},{torqueInput},{desiredVelocity},{rb.position.x},{rb.position.z},{currentVehicleState.positionX},{currentVehicleState.positionY},{currentVelocity}";
+            return (steeringValue, torqueInput, desiredVelocity);
 
-                    // copilot eidit my data string and include the postion of the ridigdbody and the sumo
-                    writer.WriteLine(data);
+        }
+
+        public static (Vector2,float,float,float,Vector2) SumoPedestrianControl(ref SumoSocketClient sock, string id, Rigidbody rb, ref Vector2 lookaheadPoint){
+            // Get info from SUMO Stepinfo object
+            SerializableVehicle currentVehicleState=null;
+            foreach(SerializableVehicle veh in sock.StepInfo.vehicleList)
+            {
+                if(id == veh.id)
+                {
+                    currentVehicleState = veh;
+                    break;
                 }
             }
-            return (steeringValue, torqueInput, desiredVelocity);
+
+            if (currentVehicleState==null)
+                Debug.LogWarning("There is no sumo object with id: "+id);
+
+
+
+            // --- Inputs --- 
+            Vector2 actualPos = new Vector2(rb.position.x,rb.position.z);
+            Vector3 eulerAngles = rb.transform.eulerAngles;
+            float unityAngle = eulerAngles.y;    
+            Vector2 goalPositionSumo = new Vector2(currentVehicleState.positionX,currentVehicleState.positionY);
+            lookaheadPoint = new Vector2(currentVehicleState.lookaheadPosX,currentVehicleState.lookaheadPosY);
+
+
+
+            // --- Outputs --- 
+            Vector2 worldMovementVector = goalPositionSumo - actualPos;
+
+            // Calculate direction vector from goal to lookahead point
+            Vector2 directionVector = lookaheadPoint - goalPositionSumo;
+            float worldMovementDirection = Mathf.Atan2(directionVector.x, directionVector.y) * Mathf.Rad2Deg;
+
+            // absolute position error
+            float absolutePositionError = worldMovementVector.magnitude;
+            float worldMovementSpeed = currentVehicleState.speed;
+
+            return (worldMovementVector, worldMovementSpeed, worldMovementDirection, absolutePositionError, lookaheadPoint);
 
         }
 
