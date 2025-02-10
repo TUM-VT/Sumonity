@@ -79,6 +79,52 @@ def predict_future_position(vehicle_id, minLookaheadDistance, maxLookaheadDistan
         print(e)
         return (0)
 
+def calculate_point_ahead(current_pos, heading_degrees, distance, rotation_center=None):
+    """
+    Calculate point P2 that originates from P1 (current_pos)
+    P1: current_pos (starting point)
+    heading_degrees: the current heading of the object
+    distance: distance to P2
+    returns: tuple (x, y) of P2
+    """
+    if rotation_center is None:
+        rotation_center = current_pos
+        
+    # Convert angle to radians
+    angle_rad = math.radians(heading_degrees)
+    cos_theta = math.cos(angle_rad)
+    sin_theta = math.sin(angle_rad)
+    
+    # 1. Translate P1 to origin
+    p1_translated = (
+        current_pos[0] - rotation_center[0],
+        current_pos[1] - rotation_center[1]
+    )
+    
+    # 2. Rotate P1 to align with coordinate system
+    p1_rotated = (
+        p1_translated[0] * cos_theta - p1_translated[1] * sin_theta,
+        p1_translated[0] * sin_theta + p1_translated[1] * cos_theta
+    )
+    
+    # 3. Calculate P2 relative to rotated P1
+    p2_local = (
+        p1_rotated[0] + distance,  # Move forward by distance
+        p1_rotated[1]
+    )
+    
+    # 4. Rotate back
+    p2_rotated = (
+        p2_local[0] * cos_theta + p2_local[1] * sin_theta,
+        -p2_local[0] * sin_theta + p2_local[1] * cos_theta
+    )
+    
+    # 5. Translate back to world space
+    x = p2_rotated[0] + rotation_center[0]
+    y = p2_rotated[1] + rotation_center[1]
+    
+    return (x, y)
+
 def TraciServer(server,dt):
     useWarmStart = False # beta feature, not fully implemented yet
     if useWarmStart:
@@ -145,7 +191,7 @@ def TraciServer(server,dt):
             id = idList[i]
             pos = traci.person.getPosition(id)
             rot = traci.person.getAngle(id)
-            rot = rot+220  # Adjust rotation to match Unity's coordinate system (why 220?)
+            rot = rot-90
             speed = traci.person.getSpeed(id)
             vehType = traci.person.getVehicleClass(id)
             signals = -1
@@ -158,18 +204,13 @@ def TraciServer(server,dt):
                 
 
             # Calculate lookahead point based on position and heading
-            # Convert heading angle from degrees to radians
-            # Note: After adding 180, 0 degrees points west, 90 degrees points south
-            heading_rad = math.radians(rot)  # Negative to correct the direction
             
             # Define lookahead distance
             lookahead_dist = 2.0  # 2 meters ahead
             
             # Calculate lookahead point using trigonometry
-            lookahead_x = pos[0] + lookahead_dist * math.cos(heading_rad)
-            lookahead_y = pos[1] + lookahead_dist * math.sin(heading_rad)
-            lookaheadPos = (lookahead_x, lookahead_y)
-            
+            lookaheadPos = calculate_point_ahead(pos, rot, lookahead_dist)
+
             stop_state = 0
             veh = SumoVehicle(id,pos,rot,speed,signals,vehType,lookaheadPos,stop_state,isInsideVehicle)
             vehicleList.append(veh.__dict__)

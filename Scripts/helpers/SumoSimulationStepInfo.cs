@@ -422,7 +422,37 @@ namespace tumvt.sumounity
 
         }
 
+        public static bool PedestrianIsInsideVehicle(ref SumoSocketClient sock, string id){
+            SerializableVehicle currentVehicleState=null;
+            foreach(SerializableVehicle veh in sock.StepInfo.vehicleList)
+            {
+                if(id == veh.id)
+                {
+                    currentVehicleState = veh;
+                    break;
+                }
+            }
+            
+            return currentVehicleState.isInsideVehicle;
+        }
+
+        public static Vector2 PedestrianGetPosition(ref SumoSocketClient sock, string id){
+            SerializableVehicle currentVehicleState=null;
+            foreach(SerializableVehicle veh in sock.StepInfo.vehicleList)
+            {
+                if(id == veh.id)
+                {
+                    currentVehicleState = veh;
+                    break;
+                }
+            }
+            
+            return new Vector2(currentVehicleState.positionX,currentVehicleState.positionY);
+        }       
+
         public static (Vector2,float,float,float,Vector2) SumoPedestrianControl(ref SumoSocketClient sock, string id, Rigidbody rb, ref Vector2 lookaheadPoint){
+
+
             // Get info from SUMO Stepinfo object
             SerializableVehicle currentVehicleState=null;
             foreach(SerializableVehicle veh in sock.StepInfo.vehicleList)
