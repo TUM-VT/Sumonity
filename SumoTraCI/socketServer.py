@@ -132,9 +132,10 @@ def TraciServer(server,dt):
             maxLookaheadDistance = 10
             lookaheadPos = predict_future_position(id, minLookaheadDistance, maxLookaheadDistance, pos, junctionIDList, speed)  
 
+            isInsideVehicle = False
 
             stop_state = 0
-            veh = SumoVehicle(id,pos,rot,speed,signals,vehType,lookaheadPos,stop_state)
+            veh = SumoVehicle(id,pos,rot,speed,signals,vehType,lookaheadPos,stop_state, isInsideVehicle)
             vehicleList.append(veh.__dict__)
 
         # ----====Persons====----
@@ -148,6 +149,13 @@ def TraciServer(server,dt):
             speed = traci.person.getSpeed(id)
             vehType = traci.person.getVehicleClass(id)
             signals = -1
+
+            # not valid for car (todo implement pedestrian class)
+            # Check if person is inside a vehicle
+            isInsideVehicle = True
+            if traci.person.getVehicle(id) == "": # returns vehicle id if person is inside a vehicle
+                isInsideVehicle = False
+                
 
             # Calculate lookahead point based on position and heading
             # Convert heading angle from degrees to radians
@@ -163,7 +171,7 @@ def TraciServer(server,dt):
             lookaheadPos = (lookahead_x, lookahead_y)
             
             stop_state = 0
-            veh = SumoVehicle(id,pos,rot,speed,signals,vehType,lookaheadPos,stop_state)
+            veh = SumoVehicle(id,pos,rot,speed,signals,vehType,lookaheadPos,stop_state,isInsideVehicle)
             vehicleList.append(veh.__dict__)
 
 

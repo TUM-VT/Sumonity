@@ -27,6 +27,7 @@ namespace tumvt.sumounity
         public float lookaheadPosX;
         public float lookaheadPosY;
         public int stopState;
+        public bool isInsideVehicle;
     }
 
     [System.Serializable]
@@ -66,7 +67,8 @@ namespace tumvt.sumounity
             float speed = serVeh.speed;
             int signals = serVeh.signals;
             int stopState = serVeh.stopState;
-            _values = new VehicleState(pos, rot, speed, signals, time, stopState);
+            bool isInsideVehicle = serVeh.isInsideVehicle;
+            _values = new VehicleState(pos, rot, speed, signals, time, stopState, isInsideVehicle);
         }
 
         public void UpdateVehicleValues(SerializableVehicle serVeh, float time)
@@ -76,6 +78,7 @@ namespace tumvt.sumounity
             float speed = serVeh.speed;
             int signals = serVeh.signals;
             int stopState = serVeh.stopState;
+            bool isInsideVehicle = serVeh.isInsideVehicle;
 
             if (useInterpolation)
             {
@@ -85,7 +88,7 @@ namespace tumvt.sumounity
             if (!useInterpolation)
             {
                 _lastValues = _values;
-                _values = new VehicleState(pos, rot, speed, signals, time, stopState);
+                _values = new VehicleState(pos, rot, speed, signals, time, stopState, isInsideVehicle);
             }
 
 
@@ -491,9 +494,10 @@ namespace tumvt.sumounity
         public int _signals;
         public float _time;
         public int _stopState;
+        public bool _isInsideVehicle;
 
 
-        public VehicleState(Vector3 pos, Quaternion rot, float speed, int signal, float time, int stopState)
+        public VehicleState(Vector3 pos, Quaternion rot, float speed, int signal, float time, int stopState, bool isInsideVehicle)
         {
             _position = pos;
             _rotation = rot;
@@ -501,6 +505,7 @@ namespace tumvt.sumounity
             _signals = signal;
             _time = time;
             _stopState = stopState;
+            _isInsideVehicle = isInsideVehicle;
         }
     }
 }

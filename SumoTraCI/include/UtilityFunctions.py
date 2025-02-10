@@ -52,7 +52,9 @@ class SumoVehicle:
     lookaheadPosX = 0
     lookaheadPosY = 0
     stopState = 0
-    def __init__(self, _id, _pos, _rot, _speed, _signals, _vehType,_lookaheadPos, _stopState):
+    isInsideVehicle = False
+    
+    def __init__(self, _id, _pos, _rot, _speed, _signals, _vehType,_lookaheadPos, _stopState, _isInsideVehicle):
         self.id = _id
         self.positionX = _pos[0]
         self.positionY = _pos[1]
@@ -63,6 +65,7 @@ class SumoVehicle:
         self.lookaheadPosX = _lookaheadPos[0]
         self.lookaheadPosY = _lookaheadPos[1]
         self.stopState = _stopState
+        self.isInsideVehicle = _isInsideVehicle
 
 class SocketServerSimple:
     HOST = "127.0.0.1"
