@@ -9,17 +9,20 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ae0a6f5792d39884d854748ce8184ee3, type: 3}
+  m_Script: {fileID: 11500000, guid: 06008ad2c29b1f14e947c9b43632558e, type: 3}
   m_Name: Vehicle Composition
   m_EditorClassIdentifier: 
   PassengerCars:
-  - {fileID: 730452379403211699, guid: 1341fc3feda15b748937f0cef497981c, type: 3}
+  - {fileID: 7193673960299363686, guid: d6b7a1364dce5894a9b6d58729af2d2f, type: 3}
+  - {fileID: 7193673960299363686, guid: d6b7a1364dce5894a9b6d58729af2d2f, type: 3}
+  - {fileID: 7193673960299363686, guid: d6b7a1364dce5894a9b6d58729af2d2f, type: 3}
+  - {fileID: 7193673960299363686, guid: d6b7a1364dce5894a9b6d58729af2d2f, type: 3}
   Trucks: []
   Bicycles:
-  - {fileID: 1979272110298036468, guid: b2f21f71220280943b05fe3ccac0f585, type: 3}
+  - {fileID: 7193673960299363686, guid: cb6868bfa429f7146a64a88f4028c1cc, type: 3}
   Persons:
-  - {fileID: 8047161636021232021, guid: aa234d2d9f2e9e6d082126271bdbd872, type: 3}
+  - {fileID: 4416926081852918481, guid: 96c80afca5cbc074394f81b985310c58, type: 3}
   Busses:
-  - {fileID: 198064, guid: de4042aa254c6a942b86f1ac3977dfa1, type: 3}
+  - {fileID: 7193673960299363686, guid: 6985eddb08f59a2499cd85bbce49890a, type: 3}
   Taxis:
-  - {fileID: 36485487630525755, guid: e16b1d5807bd6e74dbe15bfd5856effd, type: 3}
+  - {fileID: 7193673960299363686, guid: 34aa031d1b5585b4d960d5bfc4116fa3, type: 3}

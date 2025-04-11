@@ -13,202 +13,144 @@ namespace tumvt.sumounity
 
     public class SumoSocketClient : MonoBehaviour
     {
-        public string messageReceived;
-        public string messageToSend;
-        private string egoVehicleId = "bike1";
-        public SumoSimulationStepInfo stepInfo;
 
-        public Transform EgoVehicle;
-
-        private SocketClient socketClient;
-
-
-        [Header("Vehicles")]
-        public VehicleCompositionsScriptableObject vehicleCompositions; 
-        public Dictionary<string, GameObject> vehDict = new Dictionary<string, GameObject>();     
+        [System.Serializable]
+        private class DebugData 
+        {
+            [Tooltip("Message received from/to SUMO")]
+            public string messageReceived;
+            public string messageToSend;
+            public bool showDebugGizmoSimulatorEgo = false;
+        }
+        [Header("Socket Communication")]
+        [SerializeField] private DebugData debugData;
 
 
+        [Header("Vehicle Setup")]
+        [SerializeField] private VehicleSetup vehicleSetup;
+        
+        [Header("Vehicle Toggles")]
+        [SerializeField] private VehicleToggles vehicleToggles;
+        
+        [Header("Optimization Settings")]
+        [SerializeField] private OptimizationSettings optimizationSettings;
+        
+        [Header("Simulator Vehicle Info")]
+        [SerializeField] private SimulatorVehicleInfo simulatorVehicleInfo;
 
-        [Header("Misc")]
-        public bool sendData;
+        [Header("Simulation Step Information")]
+        [SerializeField] private SumoSimulationStepInfo _stepInfo;
+        public SumoSimulationStepInfo StepInfo => _stepInfo;
+
+        public bool SendData => simulatorVehicleInfo._sendData;
+        public Transform EgoVehicle => simulatorVehicleInfo.egoVehicle;
+
+        private SocketConnector SocketConnector;
+
 
         void Start()
         {
-            socketClient = new SocketClient();
-            Debug.Log("Starting Client with " + socketClient.connectionIP + " on port " + socketClient.connectionPort);
-            socketClient.Start();
+            SocketConnector = new SocketConnector();
+            Debug.Log("Starting Client with " + SocketConnector.connectionIP + " on port " + SocketConnector.connectionPort);
+            SocketConnector.Start();
         }
-
-
 
         void Update()
         {
             // ======================
             //      Receive Data
             // ====================== 
-            messageReceived = socketClient.messageReceived;
+            debugData.messageReceived = SocketConnector.messageReceived;
 
-            if (messageReceived!=null){
-
-                try
-                {
-                    stepInfo = JsonConvert.DeserializeObject<SumoSimulationStepInfo>(messageReceived);
-                }
-                catch (JsonException ex)
-                {
-                    Debug.LogWarning($"Json Deserialization of SumoStep failed! Exception: {ex.Message}");
-                    stepInfo = new SumoSimulationStepInfo();
-                }
-
-
-                
+            if (debugData.messageReceived != null)
+            {
+                DeserializeStepInfo(debugData.messageReceived);
                 UpdateVehiclesDictionary();
             }        
 
             // ======================
             //      Send Data
             // ======================
-            // This is not used now and may be removed in the future, depending on the sumo interface structure
 
-            if (sendData)
+            if (simulatorVehicleInfo._sendData)
             {
                 SerializableVehicle ego = new SerializableVehicle();
-                ego.id = "bike1";
+                ego.id = simulatorVehicleInfo.egoVehicleId;
 
-                Vector3 egoPos = EgoVehicle.position;
-                // Vector3 egoPos = EgoVehicle.position + new Vector3(200, 0, 100f);
-                float egoRot = EgoVehicle.rotation.eulerAngles.y;
+                Vector3 egoPos = simulatorVehicleInfo.egoVehicle.position;
+                float egoRot = simulatorVehicleInfo.egoVehicle.rotation.eulerAngles.y;
 
                 ego.positionX = egoPos.x;
                 ego.positionY = egoPos.z;
                 ego.rotation = egoRot;
 
-                messageToSend = JsonConvert.SerializeObject(ego);
-                socketClient.messageToSend = messageToSend;
+                debugData.messageToSend = JsonConvert.SerializeObject(ego);
+                SocketConnector.messageToSend = debugData.messageToSend;
             }
         }
 
+        public void DeserializeStepInfo(string message)
+        {
+            try
+            {
+                _stepInfo = JsonConvert.DeserializeObject<SumoSimulationStepInfo>(message);
+            }
+            catch (JsonException ex)
+            {
+                Debug.LogWarning($"Json Deserialization of SumoStep failed! Exception: {ex.Message}");
+                _stepInfo = new SumoSimulationStepInfo();
+            }
+        }
 
         private void OnApplicationQuit()
         {
-           socketClient.Close();
+           SocketConnector.Close();
         }
-
 
         void UpdateVehiclesDictionary()
         {
-            float time = stepInfo.time;
+            SumoSocketClientHelper.RemoveAllActorsIfSumoInBackground(
+                optimizationSettings.RunSumoInBackground,
+                vehicleSetup, 
+                vehicleToggles);
 
-            foreach (SerializableVehicle serVehicle in stepInfo.vehicleList)
-            {
-                string vehId = serVehicle.id;
+            SumoSocketClientHelper.CheckForNewVehiclesAndAdd(
+                _stepInfo,
+                optimizationSettings.RunSumoInBackground,
+                vehicleSetup,
+                simulatorVehicleInfo,
+                optimizationSettings,
+                vehicleToggles,
+                optimizationSettings.isTeleportOnlyMode);
 
-                bool containsKey = vehDict.ContainsKey(vehId);
-
-
-                if (!containsKey && !(vehId == egoVehicleId))
-                { // If dictionary does not contain key
-                    
-                    GameObject vehObj;
-                    float specificHeightOfCoordianteFrame;
-                    
-                    if(serVehicle.vehicleType == "passenger")
-                    {
-                        vehObj = vehicleCompositions.PassengerCars[Random.Range(0, vehicleCompositions.PassengerCars.Count)];
-                        specificHeightOfCoordianteFrame = 1f;
-                    }
-                    else if(serVehicle.vehicleType == "bicycle")
-                    {
-                        vehObj = vehicleCompositions.Bicycles[Random.Range(0, vehicleCompositions.Bicycles.Count)];
-                        specificHeightOfCoordianteFrame = 0f;
-                    }
-                    else if(serVehicle.vehicleType == "pedestrian")
-                    {
-                        vehObj = vehicleCompositions.Persons[Random.Range(0, vehicleCompositions.Persons.Count)];
-                        specificHeightOfCoordianteFrame = 1.1f;
-                    }
-                    else if(serVehicle.vehicleType == "bus")
-                    {
-                        vehObj = vehicleCompositions.Busses[Random.Range(0, vehicleCompositions.Busses.Count)];
-                        specificHeightOfCoordianteFrame = 1f;
-                    }
-                    else if(serVehicle.vehicleType == "taxi")
-                    {
-                        vehObj = vehicleCompositions.Taxis[Random.Range(0, vehicleCompositions.Taxis.Count)];
-                        specificHeightOfCoordianteFrame = 1f;
-                    }                    
-                    else
-                    {
-                        Debug.LogWarning("Vehicle Type not found in Vehicle Compositions Scriptable Object!");
-                        continue;
-                    }
-
-                    vehObj.name = serVehicle.id + " - " + serVehicle.vehicleType;
-
-                    Vector3 pos = new Vector3(serVehicle.positionX, specificHeightOfCoordianteFrame, serVehicle.positionY); // veh is starting at 1m height as there is the coordinate frame
-                    Quaternion rot = Quaternion.Euler(0, serVehicle.rotation+(float)180, 0);
-                    GameObject veh = Instantiate(vehObj,pos,rot);
-                    
-                    IVehicleController controller;
-                    controller = veh.GetComponent<IVehicleController>();
-                    if (controller == null)
-                    {
-                        // try subcomponents
-                        controller = veh.GetComponentInChildren<IVehicleController>();
-                        if (controller == null){
-                            Debug.LogError("Vehicle Controller not found!");
-                            continue;
-                        }
-                    }
-                    controller.id = serVehicle.id;
-
-                    vehDict.Add(serVehicle.id, veh);
-
-                }
-            }
-
-            // check for non existent vehicles in sumo
-
-            try
-            {
-                foreach(KeyValuePair<string, GameObject> kvp in vehDict)
-                {
-                    bool idIsContained = false;
-                    foreach (SerializableVehicle serializableVehicle in stepInfo.vehicleList)
-                    {
-                        if (kvp.Key == serializableVehicle.id)
-                            idIsContained = true;                
-                    }
-
-                    if(idIsContained)
-                    {
-                        // Check for position in BBOX
-                        // if false
-                        // destroy
-                    }
-
-                    if(!idIsContained)
-                    {
-                        Destroy(kvp.Value.gameObject);
-                        vehDict.Remove(kvp.Key);
-                    }
-                }
-            }
-            catch (System.Exception e)
-            {
-                // Handle the exceptions
-                // Debug.LogWarning("An exception occurred: " + e.Message);
-                // Something is wrong here. Time to fix it later TODO
-            }
-            finally
-            {
-                // Code that always runs, even if an exception is thrown
-                // Debug.LogWarning("Cleanup code in the finally block.");
-            }
-
-
-            
+            SumoSocketClientHelper.RemoveNonExistentActors(
+                vehicleSetup,
+                _stepInfo);
         }
 
+        public void SetRunSumoInBackground(bool value)
+        {
+            optimizationSettings.RunSumoInBackground = value;
+        }
+
+        public void SetBusEnable(bool value)
+        {
+            vehicleToggles.busEnable = value;
+        }
+
+        public void SetPedestrianEnable(bool value)
+        {
+            vehicleToggles.pedestrianEnable = value;
+        }
+
+        private void OnDrawGizmos()
+        {
+            if (debugData.showDebugGizmoSimulatorEgo)
+            {
+                Gizmos.color = new Color(1, 0, 0, 0.5f);
+                Gizmos.DrawSphere(simulatorVehicleInfo.egoVehicle.position, 2);
+                Gizmos.DrawSphere(simulatorVehicleInfo.egoVehicle.position, optimizationSettings.egoRadius);
+            }
+        }
     }
 }

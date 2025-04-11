@@ -31,6 +31,12 @@ Sumonity is a cutting-edge interface that integrates the Simulation of Urban MOb
 - **Flexible Vehicle Types**: Accommodates a variety of vehicle types including passenger cars, buses, taxis, and pedestrians.
 
 ## Installation
+
+### Installation as project:
+
+The best way to get started with Sumonity is by installing it as a complete Unity Project. Therefore, go to: https://github.com/TUM-VT/Sumonity-UnityBaseProject and follow the instructions. It will get all depedencies in a modular structure.
+
+### Installation Standlone:
 1. Get the sub repositories:
 ```
 git submodule update --init --recursive

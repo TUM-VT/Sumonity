@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8679440075659690301}
   - component: {fileID: 8679440075659690300}
+  - component: {fileID: 2891936277448558506}
   m_Layer: 0
   m_Name: SumoBridge
   m_TagString: GameController
@@ -24,12 +25,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8679440075659690299}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.7, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &8679440075659690300
 MonoBehaviour:
@@ -40,22 +42,33 @@ MonoBehaviour:
   m_GameObject: {fileID: 8679440075659690299}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 20d751b89fe2c104eaf878e210dd7e3a, type: 3}
+  m_Script: {fileID: 11500000, guid: 981dc06c0ad33414eb645704c0d9264d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   messageReceived: 
+  sendData: 1
   messageToSend: 
-  egoVehicleId: bike1
+  EgoVehicle: {fileID: 0}
   stepInfo:
     time: 0
-    trafficLightPhase: 0
     vehicleList: []
-  testVehGO: {fileID: 0}
-  EgoVehicle: {fileID: 0}
-  posOffset: {x: 0, y: 0, z: 0}
-  rotOffset: {x: 0, y: 0, z: 0}
-  vehicleCompositions: {fileID: 11400000, guid: c40a0c32fc4651a43b460c790cc0ff0c, type: 2}
-  passengerCarPrefab: {fileID: 0}
-  test: []
-  sendData: 0
-  exceptionIds: []
+    junctionList: []
+  vehicleCompositions: {fileID: 11400000, guid: 4e0f2e49caeca254cb1f493ac0a28099, type: 2}
+  runInBackground: 0
+  useEgoRadius: 0
+  egoRadius: 100
+--- !u!114 &2891936277448558506
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8679440075659690299}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed5e963c4703f624789d3dc054f2eb3c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  startSumoOnStart: 1
+  ProcessID: 
+  error: 

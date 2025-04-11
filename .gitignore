@@ -6,4 +6,5 @@
 __pycache__
 *.rou.xml
 venv/
-*.meta
+SumoTraCI/sumoProject/
+__pycache__.meta
