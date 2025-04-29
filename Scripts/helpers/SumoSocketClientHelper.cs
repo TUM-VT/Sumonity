@@ -100,6 +100,8 @@ namespace tumvt.sumounity
             GameObject veh = Object.Instantiate(vehObj, pos, rot);
             veh.name = $"{serVehicle.id}-{serVehicle.vehicleType}-{vehObj.name}";
 
+            // Set the tag to "Vehicle" for all vehicles
+            veh.tag = "Vehicle";
 
             // TODO: fix implementation to work with general vehicle controllers
             // CarController carController = veh.GetComponent<CarController>();

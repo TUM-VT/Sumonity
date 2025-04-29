@@ -69,19 +69,45 @@ public class SumoStarter : MonoBehaviour
         process.Start();
         ProcessID = process.Id.ToString();
 
+        int errorCount = 0;
+        int maxErrorsToLog = 5;
+        
+        bool activateDebug = false;
+
         while (!process.HasExited)
         {
             string output = process.StandardOutput.ReadLine();
-            if (output != null)
+            if (!string.IsNullOrEmpty(output))
             {
-                UnityEngine.Debug.Log(output);
+                try 
+                {
+                    // Log the output
+                    if (activateDebug)
+                    {
+                        UnityEngine.Debug.Log(output);
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    // Only log a limited number of errors to avoid spam
+                    if (errorCount < maxErrorsToLog)
+                    {
+                        UnityEngine.Debug.LogError($"Error processing output: {ex.Message}");
+                        errorCount++;
+                    }
+                    else if (errorCount == maxErrorsToLog)
+                    {
+                        UnityEngine.Debug.LogWarning("Suppressing further similar errors to avoid spam");
+                        errorCount++;
+                    }
+                }
             }
         }
 
         error = process.StandardError.ReadToEnd();
-        if (error != null)
+        if (!string.IsNullOrEmpty(error))
         {
-            UnityEngine.Debug.Log(error);
+            UnityEngine.Debug.LogError(error);
         }
     }
 

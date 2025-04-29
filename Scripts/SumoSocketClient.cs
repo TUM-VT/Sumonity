@@ -46,6 +46,7 @@ namespace tumvt.sumounity
         public Transform EgoVehicle => simulatorVehicleInfo.egoVehicle;
 
         private SocketConnector SocketConnector;
+        private float simulationStartTime;
 
 
         void Start()
@@ -53,6 +54,8 @@ namespace tumvt.sumounity
             SocketConnector = new SocketConnector();
             Debug.Log("Starting Client with " + SocketConnector.connectionIP + " on port " + SocketConnector.connectionPort);
             SocketConnector.Start();
+
+            simulationStartTime = Time.time; // Record the start time of the simulation
         }
 
         void Update()
@@ -97,7 +100,10 @@ namespace tumvt.sumounity
             }
             catch (JsonException ex)
             {
-                Debug.LogWarning($"Json Deserialization of SumoStep failed! Exception: {ex.Message}");
+                if (Time.time - simulationStartTime > 5) // Check if more than 5 seconds have passed
+                {
+                    Debug.LogWarning($"Json Deserialization of SumoStep failed! Exception: {ex.Message}");
+                }
                 _stepInfo = new SumoSimulationStepInfo();
             }
         }
