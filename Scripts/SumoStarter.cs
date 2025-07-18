@@ -1,12 +1,9 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using System.Diagnostics;
 using System.Threading;
-using UnityEditor;
 using System.Globalization;
-
-// © 2024 Johannes Lindner <johannes.lindner@tum.de>
+using System.IO;
 
 public class SumoStarter : MonoBehaviour
 {
@@ -20,91 +17,141 @@ public class SumoStarter : MonoBehaviour
     public string error = null;
     public float dt = 0.1f;
 
-    private Thread sumoThread { get; set; }
-    private Process process { get; set; }
+    private Thread sumoThread = null;
+    private Process process = null;
 
     void Start()
     {
         if (startSumoOnStart)
         {
             StartSumoThread();
-        } 
+        }
     }
-
 
     public void StartSumoThread()
     {
-        // Initialize Thread
+        // Don't start if our process is running
+        if (process != null && !process.HasExited)
+        {
+            UnityEngine.Debug.LogWarning("socketServer.py already running (PID=" + process.Id + ")!");
+            return;
+        }
+
+        // If a previous process is gone, clean up reference
+        if (process != null && process.HasExited)
+        {
+            process.Dispose();
+            process = null;
+        }
+
         ThreadStart threadStart = new ThreadStart(StartSumo);
         sumoThread = new Thread(threadStart);
         sumoThread.Start();
     }
 
-
-    void StartSumo()
+    private void StartSumo()
     {
-        string PYTHON_SCRIPT_PATH = "Assets/Sumonity/SumoTraCI/socketServer.py --dt " + dt.ToString(new CultureInfo("en-US"));
+        string scriptNameWithArgs = $"Assets/Sumonity/SumoTraCI/socketServer.py --dt {dt.ToString(new CultureInfo("en-US"))}";
         string venvPath = "Assets/Sumonity/SumoTraCI/venv/Scripts/activate.bat";
-        string unityWorkspacePath = System.IO.Path.GetDirectoryName(Application.dataPath);
+        string unityWorkspacePath = Path.GetDirectoryName(Application.dataPath);
 
-        // Combine the Unity workspace path with the venv and Python script paths
-        string fullVenvPath = System.IO.Path.Combine(unityWorkspacePath, venvPath);
-        string fullPythonScriptPath = System.IO.Path.Combine(unityWorkspacePath, PYTHON_SCRIPT_PATH);
+        string fullVenvPath = Path.Combine(unityWorkspacePath, venvPath);
+        string fullPythonScriptPath = Path.Combine(unityWorkspacePath, scriptNameWithArgs);
 
-        // Define Process
         ProcessStartInfo startInfo = new ProcessStartInfo();
-        startInfo.FileName = "cmd.exe"; // Use cmd.exe to execute the command
-        startInfo.WorkingDirectory = unityWorkspacePath; // Set the working directory
+        startInfo.FileName = "cmd.exe";
+        startInfo.WorkingDirectory = unityWorkspacePath;
         startInfo.RedirectStandardOutput = true;
         startInfo.RedirectStandardError = true;
         startInfo.CreateNoWindow = true;
         startInfo.UseShellExecute = false;
-
-        // Use 'call' to activate the venv and then run your Python script
         startInfo.Arguments = $"/c \"call {fullVenvPath} && python {fullPythonScriptPath}\"";
 
-        // Start Process
         process = new Process();
         process.StartInfo = startInfo;
-        process.Start();
-        ProcessID = process.Id.ToString();
 
-        while (!process.HasExited)
+        try
         {
-            string output = process.StandardOutput.ReadLine();
-            if (output != null)
+            process.Start();
+            ProcessID = process.Id.ToString();
+
+            // Read output async to avoid blocking
+            var outputThread = new Thread(() =>
             {
-                UnityEngine.Debug.Log(output);
-            }
-        }
+                string line;
+                while ((line = process.StandardOutput.ReadLine()) != null)
+                {
+                    UnityEngine.Debug.Log(line);
+                }
+            });
+            outputThread.Start();
 
-        error = process.StandardError.ReadToEnd();
-        if (error != null)
+            string err;
+            while ((err = process.StandardError.ReadLine()) != null)
+            {
+                if (!string.IsNullOrEmpty(err))
+                {
+                    error += err + "\n";
+                    UnityEngine.Debug.LogError(err);
+                }
+            }
+
+            process.WaitForExit();
+            outputThread.Join();
+        }
+        catch (System.Exception ex)
         {
-            UnityEngine.Debug.Log(error);
+            UnityEngine.Debug.LogError($"Failed to start or monitor Python process: {ex}");
         }
     }
 
-
     void OnApplicationQuit()
     {
-        // 1. Kill Process
-        process.Kill();
-        // 2. Abort Thread
-        sumoThread.Abort();
-
-
-        // 3. Close SUMO or SUMO-GUI
-        UnityEngine.Debug.Log("Closing SUMO or SUMO-GUI");
-        var processes = Process.GetProcesses();
-        foreach (var process in processes)
+        // Only terminate our tracked process
+        if (process != null && !process.HasExited)
         {
-            if (process.ProcessName.ToLower().Contains("sumo-gui"))
+            try
             {
-                process.Kill();
-                UnityEngine.Debug.Log("Closed SUMO-GUI process with ID: " + process.Id.ToString());
+                process.CloseMainWindow(); // May not do anything for CLI process
+            }
+            catch { }
+            try
+            {
+                process.WaitForExit(2000);
+            }
+            catch { }
+
+            if (!process.HasExited)
+            {
+                try
+                {
+                    process.Kill();
+                    UnityEngine.Debug.LogWarning($"Force-killed Python process with PID {process.Id}");
+                }
+                catch { }
             }
         }
 
+        // Wait for thread to finish
+        if (sumoThread != null && sumoThread.IsAlive)
+        {
+            sumoThread.Join(2000);
+        }
+
+        // Optionally, close any SUMO-GUI processes by name
+        UnityEngine.Debug.Log("Checking for open SUMO-GUI processes...");
+        var processes = Process.GetProcesses();
+        foreach (var proc in processes)
+        {
+            try
+            {
+                if (proc.ProcessName.ToLower().Contains("sumo-gui"))
+                {
+                    proc.Kill();
+                    UnityEngine.Debug.Log("Closed SUMO-GUI process with ID: " + proc.Id.ToString());
+                }
+            }
+            catch { }
+        }
     }
 }
