@@ -147,6 +147,12 @@ namespace tumvt.sumounity
         }
         public static Vector2 SUMO_groundtruth_back(ref SumoSocketClient sock, string id){
             // Get info from SUMO Stepinfo object
+            if (sock == null || sock.StepInfo == null || sock.StepInfo.vehicleList == null)
+            {
+                Debug.LogWarning("SumoSocketClient or StepInfo is null");
+                return Vector2.zero;
+            }
+            
             SerializableVehicle currentVehicleState=null;
             foreach(SerializableVehicle veh in sock.StepInfo.vehicleList)
             {
@@ -158,7 +164,10 @@ namespace tumvt.sumounity
             }
 
             if (currentVehicleState==null)
+            {
                 Debug.LogWarning("There is no sumo object with id: "+id);
+                return Vector2.zero;
+            }
 
             Vector2 sumoPosition = new Vector2(currentVehicleState.positionX,currentVehicleState.positionY);
             return sumoPosition;
@@ -240,6 +249,12 @@ namespace tumvt.sumounity
         
         public static Rigidbody SumoBicycleTeleport(ref SumoSocketClient sock, string id, Rigidbody rb, float steeringGain, ref PIDController pidControllerSpeed, ref PIDController pidControllerDist, ref Vector2 lookAheadMarker){
             // Get info from SUMO Stepinfo object
+            if (sock == null || sock.StepInfo == null || sock.StepInfo.vehicleList == null)
+            {
+                Debug.LogWarning("SumoSocketClient or StepInfo is null");
+                return rb;
+            }
+            
             SerializableVehicle currentVehicleState=null;
             foreach(SerializableVehicle veh in sock.StepInfo.vehicleList)
             {
@@ -251,7 +266,10 @@ namespace tumvt.sumounity
             }
 
             if (currentVehicleState==null)
+            {
                 Debug.LogWarning("There is no sumo object with id: "+id);
+                return rb;
+            }
 
 
             Rigidbody rb_mod = rb;
@@ -272,6 +290,12 @@ namespace tumvt.sumounity
 
         public static (float,float,float) SumoVehicleControl(ref SumoSocketClient sock, string id, Rigidbody rb, float steeringGain, ref PIDController pidControllerSpeed, ref PIDController pidControllerDist, ref Vector2 lookAheadMarker){
             // Get info from SUMO Stepinfo object
+            if (sock == null || sock.StepInfo == null || sock.StepInfo.vehicleList == null)
+            {
+                Debug.LogWarning("SumoSocketClient or StepInfo is null");
+                return (0f, 0f, 0f);
+            }
+            
             SerializableVehicle currentVehicleState=null;
             foreach(SerializableVehicle veh in sock.StepInfo.vehicleList)
             {
@@ -283,7 +307,10 @@ namespace tumvt.sumounity
             }
 
             if (currentVehicleState==null)
+            {
                 Debug.LogWarning("There is no sumo object with id: "+id);
+                return (0f, 0f, 0f);
+            }
 
 
             Vector2 actualPos = new Vector2(rb.position.x,rb.position.z);
@@ -346,6 +373,12 @@ namespace tumvt.sumounity
 
         public static (float,float,float) SumoVehicleControlWarmup(ref SumoSocketClient sock, string id, Rigidbody rb, float steeringGain, ref PIDController pidControllerSpeed, ref PIDController pidControllerDist, ref Vector2 lookAheadMarker){
             // Get info from SUMO Stepinfo object
+            if (sock == null || sock.StepInfo == null || sock.StepInfo.vehicleList == null)
+            {
+                Debug.LogWarning("SumoSocketClient or StepInfo is null");
+                return (0f, 0f, 0f);
+            }
+            
             SerializableVehicle currentVehicleState=null;
             foreach(SerializableVehicle veh in sock.StepInfo.vehicleList)
             {
@@ -357,7 +390,10 @@ namespace tumvt.sumounity
             }
 
             if (currentVehicleState==null)
+            {
                 Debug.LogWarning("There is no sumo object with id: "+id);
+                return (0f, 0f, 0f);
+            }
 
 
             Vector2 actualPos = new Vector2(rb.position.x,rb.position.z);
@@ -423,6 +459,12 @@ namespace tumvt.sumounity
         }
 
         public static bool PedestrianIsInsideVehicle(ref SumoSocketClient sock, string id){
+            if (sock == null || sock.StepInfo == null || sock.StepInfo.vehicleList == null)
+            {
+                Debug.LogWarning("SumoSocketClient or StepInfo is null");
+                return false;
+            }
+            
             SerializableVehicle currentVehicleState=null;
             foreach(SerializableVehicle veh in sock.StepInfo.vehicleList)
             {
@@ -433,10 +475,22 @@ namespace tumvt.sumounity
                 }
             }
             
+            if (currentVehicleState == null)
+            {
+                Debug.LogWarning("There is no sumo object with id: " + id);
+                return false; // Return false as default when vehicle not found
+            }
+            
             return currentVehicleState.isInsideVehicle;
         }
 
         public static Vector2 PedestrianGetPosition(ref SumoSocketClient sock, string id){
+            if (sock == null || sock.StepInfo == null || sock.StepInfo.vehicleList == null)
+            {
+                Debug.LogWarning("SumoSocketClient or StepInfo is null");
+                return Vector2.zero;
+            }
+            
             SerializableVehicle currentVehicleState=null;
             foreach(SerializableVehicle veh in sock.StepInfo.vehicleList)
             {
@@ -445,6 +499,12 @@ namespace tumvt.sumounity
                     currentVehicleState = veh;
                     break;
                 }
+            }
+            
+            if (currentVehicleState == null)
+            {
+                Debug.LogWarning("There is no sumo object with id: " + id);
+                return Vector2.zero; // Return zero vector as default when vehicle not found
             }
             
             return new Vector2(currentVehicleState.positionX,currentVehicleState.positionY);
@@ -452,8 +512,14 @@ namespace tumvt.sumounity
 
         public static (Vector2,float,float,float,Vector2) SumoPedestrianControl(ref SumoSocketClient sock, string id, Rigidbody rb, ref Vector2 lookaheadPoint){
 
-
             // Get info from SUMO Stepinfo object
+            if (sock == null || sock.StepInfo == null || sock.StepInfo.vehicleList == null)
+            {
+                Debug.LogWarning("SumoSocketClient or StepInfo is null");
+                lookaheadPoint = Vector2.zero;
+                return (Vector2.zero, 0f, 0f, 0f, Vector2.zero);
+            }
+            
             SerializableVehicle currentVehicleState=null;
             foreach(SerializableVehicle veh in sock.StepInfo.vehicleList)
             {
@@ -465,7 +531,11 @@ namespace tumvt.sumounity
             }
 
             if (currentVehicleState==null)
+            {
                 Debug.LogWarning("There is no sumo object with id: "+id);
+                lookaheadPoint = Vector2.zero;
+                return (Vector2.zero, 0f, 0f, 0f, Vector2.zero);
+            }
 
 
 
@@ -495,6 +565,11 @@ namespace tumvt.sumounity
 
         public static int getVehicleStopState(ref SumoSocketClient sock, string id)
         {
+            if (sock == null || sock.StepInfo == null || sock.StepInfo.vehicleList == null)
+            {
+                throw new InvalidOperationException("SumoSocketClient or StepInfo is null");
+            }
+            
             SerializableVehicle currentVehicle=null;
             foreach(SerializableVehicle veh in sock.StepInfo.vehicleList)
             {
