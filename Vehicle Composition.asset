@@ -13,13 +13,16 @@ MonoBehaviour:
   m_Name: Vehicle Composition
   m_EditorClassIdentifier: 
   PassengerCars:
-  - {fileID: 7193673960299363686, guid: d6b7a1364dce5894a9b6d58729af2d2f, type: 3}
-  - {fileID: 7193673960299363686, guid: d6b7a1364dce5894a9b6d58729af2d2f, type: 3}
-  - {fileID: 7193673960299363686, guid: d6b7a1364dce5894a9b6d58729af2d2f, type: 3}
-  - {fileID: 7193673960299363686, guid: d6b7a1364dce5894a9b6d58729af2d2f, type: 3}
+  - {fileID: 7790148540567442869, guid: 75af29bd7d765e64c86e398c40b294b1, type: 3}
+  - {fileID: 5855428051584551815, guid: 92fc8451bba161645960c7ea0aecb50a, type: 3}
+  - {fileID: 548916645831260737, guid: b21811dbcaa66c342acc110bb573da4a, type: 3}
+  - {fileID: 3896649973512522099, guid: 3cd9373f59881a24dbc884e81a01dc89, type: 3}
+  - {fileID: 4933583111240688830, guid: acf1b64a1fbe1d74d93024e62413459d, type: 3}
+  - {fileID: 7014147353987398875, guid: fb71e58c7d638de488082959e77cc8da, type: 3}
+  - {fileID: 5482471505496333758, guid: 32b8693c5b8095f48ac5100d268ae0ea, type: 3}
   Trucks: []
   Bicycles:
-  - {fileID: 7193673960299363686, guid: cb6868bfa429f7146a64a88f4028c1cc, type: 3}
+  - {fileID: 8057256382253205560, guid: 34ccd41fe34feee46bda2addce5faa9e, type: 3}
   Persons:
   - {fileID: 4416926081852918481, guid: 96c80afca5cbc074394f81b985310c58, type: 3}
   Busses:
