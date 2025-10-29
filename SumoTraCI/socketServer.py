@@ -22,12 +22,24 @@ from include.simulation_utils import is_valid_json, extract_number, clamp_value
 
 debugWithoutUntiy = False
 
+# Performance optimization: use lookup table for path lookahead calculations
+# Set to False if you experience freezing issues
+USE_LOOKUP_CACHE = False  # Disabled - causes blocking during table builds
 
-
-# uncool coding style ;) 
+# Global caches
 globalPreviousPathDict = {}
 
-def predict_future_position(vehicle_id, minLookaheadDistance, maxLookaheadDistance, pos, junctionIDList, speed):
+# Lane shape cache for performance
+lane_shape_cache = {}
+
+def get_cached_lane_shape(lane_id):
+    """Get lane shape with caching to avoid repeated TraCI calls."""
+    global lane_shape_cache
+    if lane_id not in lane_shape_cache:
+        lane_shape_cache[lane_id] = traci.lane.getShape(lane_id)
+    return lane_shape_cache[lane_id]
+
+def predict_future_position(vehicle_id, minLookaheadDistance, maxLookaheadDistance, pos, junctionIDSet, speed):
     global globalPreviousPathDict
     current_lane = traci.vehicle.getLaneID(vehicle_id)
 
@@ -36,7 +48,8 @@ def predict_future_position(vehicle_id, minLookaheadDistance, maxLookaheadDistan
 
     isJunction = None
     if not(LaneID==None):
-        isJunction = any(LaneID in s for s in junctionIDList)
+        # Use set lookup for O(1) performance instead of O(n)
+        isJunction = LaneID in junctionIDSet
 
     if isJunction==None:
         # The current lane may change as a result of lane changes that can occur locally
@@ -49,7 +62,8 @@ def predict_future_position(vehicle_id, minLookaheadDistance, maxLookaheadDistan
 
         routeShape = []
         for lanes in lanebasedRoute:
-            routeShape.append(traci.lane.getShape(lanes))
+            # Use cached lane shapes
+            routeShape.append(get_cached_lane_shape(lanes))
 
         path = routeShape
         globalPreviousPathDict[vehicle_id] = path
@@ -57,11 +71,11 @@ def predict_future_position(vehicle_id, minLookaheadDistance, maxLookaheadDistan
         # if we are inside a junction. we cannot update as the vehicle does not know its 
         # next lane in sumo. this is stupid, bus that's how sumo works here. The reasion 
         # is the getNextLinks Function.
-        # path = globalPreviousPath
-        path = globalPreviousPathDict[vehicle_id]
+        path = globalPreviousPathDict.get(vehicle_id)
+        if path is None:
+            return (0, 0)  # No path available yet
 
-
-    current_position = (pos[0],pos[1])  # Replace with the vehicle's current position
+    current_position = (pos[0],pos[1])
 
     # speed dependent lookahead value, to increase control stability
     if (speed/3.6)<minLookaheadDistance:
@@ -73,11 +87,15 @@ def predict_future_position(vehicle_id, minLookaheadDistance, maxLookaheadDistan
     lookaheadDistance = clamp_value(lookaheadDistance,minLookaheadDistance,maxLookaheadDistance)
 
     try:
+        # Use original working method with optimizations
         point_ahead = find_point_ahead_on_path(path, current_position, lookaheadDistance)
-        return(point_ahead)
+        return point_ahead
     except ValueError as e:
         print(e)
-        return (0)
+        return (0, 0)
+    except Exception as e:
+        print(f"Error in predict_future_position for {vehicle_id}: {e}")
+        return (0, 0)
 
 def calculate_point_ahead(current_pos, heading_degrees, distance, rotation_center=None):
     """
@@ -136,7 +154,15 @@ def TraciServer(server,dt):
 
         
 
+    # Convert to set for O(1) lookup performance
     junctionIDList = traci.junction.getIDList()
+    junctionIDSet = set()
+    for jid in junctionIDList:
+        # Extract numbers from junction IDs for fast lookup
+        num = extract_number(jid)
+        if num is not None:
+            junctionIDSet.add(num)
+    
     traci.setOrder(0)
 
     step = 0
@@ -176,7 +202,7 @@ def TraciServer(server,dt):
             # get lookahaed point
             minLookaheadDistance = 7
             maxLookaheadDistance = 10
-            lookaheadPos = predict_future_position(id, minLookaheadDistance, maxLookaheadDistance, pos, junctionIDList, speed)  
+            lookaheadPos = predict_future_position(id, minLookaheadDistance, maxLookaheadDistance, pos, junctionIDSet, speed)  
 
             isInsideVehicle = False
 
