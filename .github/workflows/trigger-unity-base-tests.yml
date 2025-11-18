@@ -28,6 +28,35 @@ jobs:
           owner: ${{ env.TARGET_OWNER }}
           repositories: ${{ env.TARGET_REPO }}
 
+      - name: Snapshot current workflow runs
+        id: snapshot-runs
+        uses: actions/github-script@v7
+        env:
+          TARGET_WORKFLOW_FILE: ${{ env.TARGET_WORKFLOW_FILE }}
+          TARGET_OWNER: ${{ env.TARGET_OWNER }}
+          TARGET_REPO: ${{ env.TARGET_REPO }}
+          TARGET_REF: ${{ env.TARGET_REF }}
+        with:
+          github-token: ${{ steps.generate-token.outputs.token }}
+          script: |
+            const owner = process.env.TARGET_OWNER;
+            const repo = process.env.TARGET_REPO;
+            const workflow_id = process.env.TARGET_WORKFLOW_FILE;
+            const ref = process.env.TARGET_REF;
+            const response = await github.rest.actions.listWorkflowRuns({
+              owner,
+              repo,
+              workflow_id,
+              branch: ref,
+              event: 'workflow_dispatch',
+              per_page: 20,
+            });
+            const existingIds = response.data.workflow_runs.map(run => run.id);
+            const snapshotTime = new Date().toISOString();
+            core.info(`Captured ${existingIds.length} existing workflow runs at ${snapshotTime}.`);
+            core.setOutput('existing_run_ids', JSON.stringify(existingIds));
+            core.setOutput('snapshot_time', snapshotTime);
+
       - name: Trigger Unity Test workflow in base repo
         uses: actions/github-script@v7
         env:
@@ -51,3 +80,79 @@ jobs:
               ref,
             });
             core.info('Workflow dispatched successfully.');
+
+      - name: Wait for Unity Test workflow result
+        uses: actions/github-script@v7
+        env:
+          TARGET_WORKFLOW_FILE: ${{ env.TARGET_WORKFLOW_FILE }}
+          TARGET_OWNER: ${{ env.TARGET_OWNER }}
+          TARGET_REPO: ${{ env.TARGET_REPO }}
+          TARGET_REF: ${{ env.TARGET_REF }}
+          EXISTING_RUN_IDS: ${{ steps.snapshot-runs.outputs.existing_run_ids }}
+          SNAPSHOT_TIME: ${{ steps.snapshot-runs.outputs.snapshot_time }}
+          POLL_INTERVAL_SECONDS: 30
+          TIMEOUT_MINUTES: 45
+        with:
+          github-token: ${{ steps.generate-token.outputs.token }}
+          script: |
+            const owner = process.env.TARGET_OWNER;
+            const repo = process.env.TARGET_REPO;
+            const workflow_id = process.env.TARGET_WORKFLOW_FILE;
+            const ref = process.env.TARGET_REF;
+            const pollInterval = Number(process.env.POLL_INTERVAL_SECONDS || '30') * 1000;
+            const timeoutMs = Number(process.env.TIMEOUT_MINUTES || '45') * 60 * 1000;
+            const snapshotTimeMs = Date.parse(process.env.SNAPSHOT_TIME || '');
+            const seenIds = new Set(JSON.parse(process.env.EXISTING_RUN_IDS || '[]'));
+
+            const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+            const start = Date.now();
+
+            async function findLatestRun() {
+              const { data } = await github.rest.actions.listWorkflowRuns({
+                owner,
+                repo,
+                workflow_id,
+                branch: ref,
+                event: 'workflow_dispatch',
+                per_page: 20,
+              });
+
+              return data.workflow_runs.find(run => {
+                if (seenIds.has(run.id)) {
+                  return false;
+                }
+                if (!Number.isNaN(snapshotTimeMs)) {
+                  const createdAtMs = Date.parse(run.created_at);
+                  return createdAtMs >= snapshotTimeMs;
+                }
+                return true;
+              });
+            }
+
+            core.info('Waiting for Unity base workflow to finish...');
+            while (Date.now() - start < timeoutMs) {
+              const candidate = await findLatestRun();
+              if (!candidate) {
+                await sleep(pollInterval);
+                continue;
+              }
+
+              core.info(`Observed run ${candidate.id} with status ${candidate.status} (conclusion: ${candidate.conclusion || 'n/a'}).`);
+
+              if (candidate.status !== 'completed') {
+                await sleep(pollInterval);
+                continue;
+              }
+
+              const conclusion = candidate.conclusion || 'unknown';
+              core.info(`Unity base workflow completed with conclusion '${conclusion}'. See ${candidate.html_url}`);
+
+              if (conclusion === 'success') {
+                return;
+              }
+
+              core.setFailed(`Unity base workflow concluded with '${conclusion}'. See ${candidate.html_url}`);
+              return;
+            }
+
+            core.setFailed('Timed out waiting for Unity base workflow to complete.');

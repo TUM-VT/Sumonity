@@ -73,7 +73,13 @@ To enable the dispatch with a GitHub App:
 	- `UNITY_BASE_APP_INSTALLATION_ID` – the installation ID that corresponds to the base project repository.
 3. (Optional) Adjust `TARGET_REF` inside the workflow if you want to run the base workflow against a branch other than `main`.
 
-Once configured, every qualifying push—or a manual "Run workflow" action—will trigger the Unity tests in the base project, keeping both repositories in sync.
+Once configured, every qualifying push—or a manual "Run workflow" action—will trigger the Unity tests in the base project. The helper workflow polls the dispatched run (up to ~45 minutes) and:
+
+- marks this workflow successful only if the base run concludes with `success`;
+- fails immediately when the base workflow finishes with any other conclusion (cancelled, failure, timed_out, etc.);
+- fails with a timeout if the base workflow never appears or does not finish in the allotted window.
+
+That behavior keeps the Sumonity repository CI green only when the Unity base tests also pass.
 
 
 After setting up the network file, we create demand etc. as usual.
