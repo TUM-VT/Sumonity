@@ -1,10 +1,9 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using System.Diagnostics;
 using System.Threading;
-using UnityEditor;
 using System.Globalization;
+using System.IO;
 
 // © 2024 Johannes Lindner <johannes.lindner@tum.de>
 
@@ -22,6 +21,13 @@ public class SumoStarter : MonoBehaviour
 
     private Thread sumoThread { get; set; }
     private Process process { get; set; }
+    private static string markerFilePath;
+
+    void Awake()
+    {
+        string unityWorkspacePath = Path.GetDirectoryName(Application.dataPath);
+        markerFilePath = Path.Combine(unityWorkspacePath, "sumo_bridge.pid");
+    }
 
     void Start()
     {
@@ -30,7 +36,7 @@ public class SumoStarter : MonoBehaviour
             // Clean up any existing processes before starting
             CleanupExistingProcesses();
             StartSumoThread();
-        } 
+        }
     }
 
 
@@ -45,31 +51,98 @@ public class SumoStarter : MonoBehaviour
 
     void StartSumo()
     {
-        string PYTHON_SCRIPT_PATH = "Assets/Sumonity/SumoTraCI/socketServer.py --dt " + dt.ToString(new CultureInfo("en-US"));
-        string venvPath = "Assets/Sumonity/SumoTraCI/venv/Scripts/activate.bat";
-        string unityWorkspacePath = System.IO.Path.GetDirectoryName(Application.dataPath);
+        string unityWorkspacePath = Path.GetDirectoryName(Application.dataPath);
+        string scriptPath = Path.Combine(unityWorkspacePath, "Assets/Sumonity/SumoTraCI/socketServer.py");
+        if (!File.Exists(scriptPath))
+        {
+            UnityEngine.Debug.LogError($"SUMO socket server script not found at {scriptPath}");
+            error = "socketServer.py missing";
+            return;
+        }
+        string dtValue = dt.ToString(new CultureInfo("en-US"));
 
-        // Combine the Unity workspace path with the venv and Python script paths
-        string fullVenvPath = System.IO.Path.Combine(unityWorkspacePath, venvPath);
-        string fullPythonScriptPath = System.IO.Path.Combine(unityWorkspacePath, PYTHON_SCRIPT_PATH);
+        string[] pythonCandidates = new[]
+        {
+            Path.Combine(unityWorkspacePath, "Assets/Sumonity/SumoTraCI/venv/Scripts/python.exe"),
+            Path.Combine(unityWorkspacePath, "Assets/Sumonity/SumoTraCI/venv/bin/python"),
+            "python",
+            "python3"
+        };
 
-        // Define Process
-        ProcessStartInfo startInfo = new ProcessStartInfo();
-        startInfo.FileName = "cmd.exe"; // Use cmd.exe to execute the command
-        startInfo.WorkingDirectory = unityWorkspacePath; // Set the working directory
-        startInfo.RedirectStandardOutput = true;
-        startInfo.RedirectStandardError = true;
-        startInfo.CreateNoWindow = true;
-        startInfo.UseShellExecute = false;
+        Process startedProcess = null;
+        string selectedPython = null;
+        bool fromVenv = false;
+        string lastErrorMessage = null;
 
-        // Use 'call' to activate the venv and then run your Python script
-        startInfo.Arguments = $"/c \"call {fullVenvPath} && python {fullPythonScriptPath}\"";
+        foreach (string candidate in pythonCandidates)
+        {
+            if (string.IsNullOrEmpty(candidate))
+            {
+                continue;
+            }
 
-        // Start Process
-        process = new Process();
-        process.StartInfo = startInfo;
-        process.Start();
+            bool isFilePath = candidate.Contains(Path.DirectorySeparatorChar.ToString()) || candidate.Contains("/");
+            if (isFilePath && !File.Exists(candidate))
+            {
+                continue;
+            }
+
+            ProcessStartInfo startInfo = new ProcessStartInfo
+            {
+                FileName = candidate,
+                Arguments = $"\"{scriptPath}\" --dt {dtValue}",
+                WorkingDirectory = unityWorkspacePath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+                UseShellExecute = false
+            };
+
+            Process trialProcess = new Process
+            {
+                StartInfo = startInfo
+            };
+
+            try
+            {
+                trialProcess.Start();
+                startedProcess = trialProcess;
+                selectedPython = candidate;
+                fromVenv = isFilePath;
+                break;
+            }
+            catch (System.Exception ex)
+            {
+                lastErrorMessage = ex.Message;
+                try
+                {
+                    trialProcess.Dispose();
+                }
+                catch
+                {
+                }
+            }
+        }
+
+        if (startedProcess == null)
+        {
+            UnityEngine.Debug.LogError($"Failed to start SUMO bridge. Last error: {lastErrorMessage}");
+            error = lastErrorMessage ?? "Unable to start python process";
+            return;
+        }
+
+        if (fromVenv)
+        {
+            UnityEngine.Debug.Log($"Starting SUMO bridge with bundled virtual environment: {selectedPython}");
+        }
+        else
+        {
+            UnityEngine.Debug.LogWarning($"Using global python interpreter for SUMO bridge: {selectedPython}");
+        }
+
+        process = startedProcess;
         ProcessID = process.Id.ToString();
+        WriteMarkerFile(process.Id);
 
         int errorCount = 0;
         int maxErrorsToLog = 5;
@@ -123,6 +196,9 @@ public class SumoStarter : MonoBehaviour
     {
         UnityEngine.Debug.Log("Cleaning up processes...");
 
+        // Always attempt to clean up an orphaned SUMO Python process from a previous run
+        CleanupOrphanedSumoProcessFromMarker();
+
         // 1. Kill the main process if it exists and hasn't exited
         if (process != null)
         {
@@ -141,6 +217,8 @@ public class SumoStarter : MonoBehaviour
             }
             finally
             {
+                // Remove marker file when we know the process is gone
+                TryDeleteMarkerFile();
                 try
                 {
                     process.Dispose();
@@ -206,50 +284,103 @@ public class SumoStarter : MonoBehaviour
             UnityEngine.Debug.LogError($"Error during process cleanup: {ex.Message}");
         }
 
-        // 4. Also kill any Python processes running socketServer.py
+        UnityEngine.Debug.Log("Process cleanup completed");
+    }
+
+    private void WriteMarkerFile(int pid)
+    {
+        if (string.IsNullOrEmpty(markerFilePath))
+        {
+            return;
+        }
+
         try
         {
-            var pythonProcesses = Process.GetProcesses();
-            foreach (var proc in pythonProcesses)
+            File.WriteAllText(markerFilePath, pid.ToString());
+        }
+        catch (System.Exception ex)
+        {
+            UnityEngine.Debug.LogWarning($"Failed to write SUMO Python PID marker: {ex.Message}");
+        }
+    }
+
+    private void CleanupOrphanedSumoProcessFromMarker()
+    {
+        if (string.IsNullOrEmpty(markerFilePath))
+        {
+            return;
+        }
+
+        try
+        {
+            if (!File.Exists(markerFilePath))
             {
-                try
+                return;
+            }
+
+            string pidText = File.ReadAllText(markerFilePath).Trim();
+            if (!int.TryParse(pidText, out int pid))
+            {
+                return;
+            }
+
+            Process orphan = null;
+            try
+            {
+                orphan = Process.GetProcessById(pid);
+            }
+            catch (System.ArgumentException)
+            {
+                // Process is no longer running
+            }
+
+            if (orphan != null)
+            {
+                using (orphan)
                 {
-                    if (!proc.HasExited && proc.ProcessName.ToLower().Contains("python"))
+                    if (!orphan.HasExited && orphan.ProcessName.ToLower().Contains("python"))
                     {
-                        // Try to get command line to see if it's our script
-                        // Note: This requires additional permissions on some systems
+                        UnityEngine.Debug.Log($"Killing orphaned SUMO Python process with ID: {orphan.Id}");
                         try
                         {
-                            string cmdLine = proc.MainModule?.FileName ?? "";
-                            if (!string.IsNullOrEmpty(cmdLine))
-                            {
-                                UnityEngine.Debug.Log($"Found Python process: {proc.Id}");
-                                // Kill it to be safe - you might want to be more selective here
-                                proc.Kill();
-                                proc.WaitForExit(2000);
-                            }
+                            orphan.Kill();
+                            orphan.WaitForExit(3000);
                         }
-                        catch
+                        catch (System.Exception ex)
                         {
-                            // Can't access command line, skip this process
+                            UnityEngine.Debug.LogWarning($"Error killing orphaned SUMO Python process: {ex.Message}");
                         }
                     }
-                }
-                catch (System.Exception)
-                {
-                    // Skip processes we can't access
-                }
-                finally
-                {
-                    proc.Dispose();
                 }
             }
         }
         catch (System.Exception ex)
         {
-            UnityEngine.Debug.LogWarning($"Error cleaning up Python processes: {ex.Message}");
+            UnityEngine.Debug.LogWarning($"Error during orphaned SUMO Python cleanup: {ex.Message}");
+        }
+        finally
+        {
+            TryDeleteMarkerFile();
+        }
+    }
+
+    private void TryDeleteMarkerFile()
+    {
+        if (string.IsNullOrEmpty(markerFilePath))
+        {
+            return;
         }
 
-        UnityEngine.Debug.Log("Process cleanup completed");
+        try
+        {
+            if (File.Exists(markerFilePath))
+            {
+                File.Delete(markerFilePath);
+            }
+        }
+        catch
+        {
+            // Ignore errors when deleting the marker file
+        }
     }
 }
