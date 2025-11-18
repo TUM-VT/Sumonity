@@ -5,14 +5,15 @@
 2. [Introduction](#introduction)
 3. [Features](#features)
 4. [Installation](#installation)
-5. [Usage](#usage)
-6. [Architecture](#architecture)
-7. [Agent Information](#agent-information)
-8. [Vehicle Control Mechanism](#vehicle-control-mechanism)
-9. [Dependencies](#dependencies)
-13. [Troubleshooting](#troubleshooting)
-14. [Contributors](#contributors)
-15. [License](#license)
+5. [Continuous Integration Trigger](#continuous-integration-trigger)
+6. [Usage](#usage)
+7. [Architecture](#architecture)
+8. [Agent Information](#agent-information)
+9. [Vehicle Control Mechanism](#vehicle-control-mechanism)
+10. [Dependencies](#dependencies)
+11. [Troubleshooting](#troubleshooting)
+12. [Contributors](#contributors)
+13. [License](#license)
 
 ---
 
@@ -60,15 +61,20 @@ pip install -r requirements.txt
 3. Add the Sumo Bridge Prefab to your Unity Scene.
 
 
+## Continuous Integration Trigger
+The `Assets/Sumonity/.github/workflows/trigger-unity-base-tests.yml` workflow automatically dispatches the Unity base-project pipeline (`unity-test.yml`) whenever this repository receives a push on `main` or `dev-ci` (you can extend the trigger list if needed). The workflow uses the GitHub REST API to call the workflow_dispatch endpoint in `TUM-VT/Sumonity-UnityBaseProject` via a GitHub App installation token (no PATs required).
 
-## Usage
-Guidelines for using Sumonity are as follows:
-- In order to achieve a synchronized sumo and untiy environment we are using mathwork roarunner to create the "digital twin" from there we export the 3d model to unity and the opendrive file to sumo. We convert the open drive file using netconvert:
+To enable the dispatch with a GitHub App:
 
-```
-netconvert --opendrive .\TUM_009.xodr -o tum_009.net.xml
-```
-Hint: Execute the comment using the active virtual environment.
+1. Create or reuse a GitHub App that has at least **Actions: Read & write** permissions (plus **Workflows: Read & write** if available) and is installed on `TUM-VT/Sumonity-UnityBaseProject`. Note the **App ID**, generate a **private key**, and record the **installation ID** for that repository.
+2. In the Sumonity repository settings, add the following secrets:
+	- `UNITY_BASE_APP_ID` – the numeric App ID.
+	- `UNITY_BASE_APP_PRIVATE_KEY` – the PEM contents of the App's private key (multi-line values are supported).
+	- `UNITY_BASE_APP_INSTALLATION_ID` – the installation ID that corresponds to the base project repository.
+3. (Optional) Adjust `TARGET_REF` inside the workflow if you want to run the base workflow against a branch other than `main`.
+
+Once configured, every qualifying push—or a manual "Run workflow" action—will trigger the Unity tests in the base project, keeping both repositories in sync.
+
 
 After setting up the network file, we create demand etc. as usual.
 
