@@ -63,8 +63,8 @@ public class SumoStarter : MonoBehaviour
 
         string[] pythonCandidates = new[]
         {
-            Path.Combine(unityWorkspacePath, "Assets/Sumonity/SumoTraCI/venv/Scripts/python.exe"),
-            Path.Combine(unityWorkspacePath, "Assets/Sumonity/SumoTraCI/venv/bin/python"),
+            Path.Combine(unityWorkspacePath, "Assets/Sumonity/SumoTraCI/.venv/Scripts/python.exe"),
+            Path.Combine(unityWorkspacePath, "Assets/Sumonity/SumoTraCI/.venv/bin/python"),
             "python",
             "python3"
         };
