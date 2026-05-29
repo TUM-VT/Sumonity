@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Globalization;
 using System.IO;
+using UnityEditor;
 
 // © 2024 Johannes Lindner <johannes.lindner@tum.de>
 
@@ -11,7 +12,12 @@ public class SumoStarter : MonoBehaviour
 {
     [Header("Control")]
     [SerializeField]
+    DefaultAsset sumoConfigFile;
+
+    [SerializeField]
     bool startSumoOnStart = true;
+    [SerializeField]
+    bool useSumoGui = true;
 
     [Header("Debug")]
     [SerializeField]
@@ -23,10 +29,13 @@ public class SumoStarter : MonoBehaviour
     private Process process { get; set; }
     private static string markerFilePath;
 
+    string sumoConfigPath;
+
     void Awake()
     {
         string unityWorkspacePath = Path.GetDirectoryName(Application.dataPath);
         markerFilePath = Path.Combine(unityWorkspacePath, "sumo_bridge.pid");
+        sumoConfigPath = AssetDatabase.GetAssetPath(sumoConfigFile);
     }
 
     void Start()
@@ -42,6 +51,12 @@ public class SumoStarter : MonoBehaviour
 
     public void StartSumoThread()
     {
+        if (sumoConfigFile == null)
+        { 
+            UnityEngine.Debug.LogError("[ERROR] SUMO configuration file not assigned in inspector.");
+            return;
+        }
+
         // Initialize Thread
         ThreadStart threadStart = new ThreadStart(StartSumo);
         sumoThread = new Thread(threadStart);
@@ -73,6 +88,12 @@ public class SumoStarter : MonoBehaviour
         string selectedPython = null;
         bool fromVenv = false;
         string lastErrorMessage = null;
+        string processArgs = null;
+
+        // Build Process Start Arguments
+        processArgs = $"\"{scriptPath}\" --sumocfg_path {sumoConfigPath} --dt {dtValue}";
+        if (useSumoGui) { processArgs += " --gui"; }
+
 
         foreach (string candidate in pythonCandidates)
         {
@@ -90,7 +111,7 @@ public class SumoStarter : MonoBehaviour
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = candidate,
-                Arguments = $"\"{scriptPath}\" --dt {dtValue}",
+                Arguments = processArgs,
                 WorkingDirectory = unityWorkspacePath,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,

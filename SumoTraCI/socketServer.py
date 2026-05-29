@@ -143,12 +143,14 @@ def calculate_point_ahead(current_pos, heading_degrees, distance, rotation_cente
     
     return (x, y)
 
-def TraciServer(server,dt):
+def TraciServer(server,sumoCfgPath,dt,use_sumo_gui):
     useWarmStart = False # beta feature, not fully implemented yet
+    sumoBinary = "sumo-gui" if use_sumo_gui else "sumo"
+
     if useWarmStart:
-        traci.start(["sumo-gui","-c", "Assets/Sumonity/SumoTraCI/sumoProject/opensource.sumocfg","--num-clients", "1", "--load-state", "Assets/Sumonity/SumoTraCI/sumoProject/warm_up/warm_up_state.xml", "-S"])
+        traci.start([sumoBinary,"-c", sumoCfgPath,"--num-clients", "1", "--load-state", "Assets/SumoProject/warm_up/warm_up_state.xml", "-S"])
     else:
-        traci.start(["sumo-gui","-c", "Assets/Sumonity/SumoTraCI/sumoProject/opensource.sumocfg","--num-clients", "1", "-S"])
+        traci.start([sumoBinary,"-c", sumoCfgPath,"--num-clients", "1", "-S"])
 
 
 
@@ -314,15 +316,22 @@ def ServerStarted(server):
         print("Waiting for Unity...")
         while not server.is_connected():
             time.sleep(0.1)
-    thread2 = threading.Thread(target=TraciServer, args=(server, dt))
+    thread2 = threading.Thread(target=TraciServer, args=(server, SUMO_CFG_PATH, dt, USE_SUMO_GUI))
     thread2.start()
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='SUMO-Unity Bridge Server')
+    parser.add_argument('--sumocfg_path', 
+                        type=str,
+                        required=True,
+                        help='Path to the SUMO configuration file')
     parser.add_argument('--dt', 
                        type=float, 
                        required=True,
                        help='Simulation timestep in seconds')
+    parser.add_argument('--gui', 
+                        action='store_true', 
+                        help='Run SUMO with GUI')
     return parser.parse_args()
 
 # ---=========---
@@ -332,7 +341,9 @@ if __name__ == '__main__':
     args = parse_arguments()
     # dt must be aligned with the unity simulation
     dt = args.dt
-    
+    USE_SUMO_GUI = args.gui
+    SUMO_CFG_PATH = args.sumocfg_path
+
     server = SocketServerSimple("127.0.0.1", 25001, dt)
     server.messageToSend = "default"
 
