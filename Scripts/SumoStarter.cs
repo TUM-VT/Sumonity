@@ -52,9 +52,17 @@ public class SumoStarter : MonoBehaviour
     public void StartSumoThread()
     {
         if (sumoConfigFile == null)
-        { 
-            UnityEngine.Debug.LogError("[ERROR] SUMO configuration file not assigned in inspector.");
-            return;
+        {
+            // Try to load it manually from the default location if not assigned in inspector
+            sumoConfigFile = AssetDatabase.LoadAssetAtPath<DefaultAsset>("Assets/SumoProject/opensource.sumocfg");
+            sumoConfigPath = AssetDatabase.GetAssetPath(sumoConfigFile);
+            UnityEngine.Debug.LogWarning("[WARNING] SUMO configuration file not assigned in inspector. Attempting to load default config from Assets/SumoProject/opensource.sumocfg");
+
+            if (sumoConfigFile == null)
+            {
+                UnityEngine.Debug.LogError("[ERROR] SUMO configuration file not assigned in inspector.");
+                return;
+            }
         }
 
         // Initialize Thread
